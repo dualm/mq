@@ -1,0 +1,106 @@
+package rpc
+
+import (
+	"context"
+	"log"
+	"time"
+
+	"github.com/dualm/mq"
+	"github.com/dualm/mq/rabbitmq"
+
+	amqp "github.com/rabbitmq/amqp091-go"
+)
+
+var (
+	requestChan = make(chan mq.MqMessage)
+	reqChan     = make(chan mq.MqMessage)
+	subChan     = make(chan bool, 10)
+	rspChan     = make(chan amqp.Delivery)
+)
+
+func redial(c context.Context, url, queue, vhost string) chan chan rabbitmq.Session {
+	sessions := make(chan chan rabbitmq.Session)
+
+	go func() {
+		sess := make(chan rabbitmq.Session)
+		defer close(sess)
+
+		for {
+			select {
+			case sessions <- sess:
+			case <-c.Done():
+				log.Println("shutting down rabbitmq.Session factory")
+
+				return
+			}
+
+			conn, err := amqp.DialConfig(url, amqp.Config{
+				Vhost: vhost,
+			})
+			if err != nil {
+				log.Printf("cannot (re)dial: %v: %q", err, url)
+
+				time.Sleep(time.Minute)
+
+				continue
+			}
+
+			ch, err := conn.Channel()
+			if err != nil {
+				log.Printf("cannot create channel: %v", err)
+
+				time.Sleep(time.Minute)
+
+				continue
+			}
+
+			_, err = ch.QueueDeclare(queue, true, true, false, false, nil)
+			if err != nil {
+				log.Printf("cannot declare queue: %v", err)
+
+				time.Sleep(time.Minute)
+
+				continue
+			}
+
+			select {
+			case sess <- rabbitmq.Session{Connection: conn, Channel: ch}:
+			case <-c.Done():
+				log.Println("shutting down new rabbitmq.Session")
+
+				return
+			}
+		}
+	}()
+
+	return sessions
+}
+
+func sendRequest(duration time.Duration, msg mq.MqMessage, rsp chan<- []byte) {
+	// 发送数据
+	subChan <- true
+	reqChan <- msg
+	// 计时开始
+	ticker := time.NewTicker(duration)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case delivery := <-rspChan:
+			if delivery.CorrelationId == msg.CorraltedId {
+				log.Printf("Got Response: \n%s", string(delivery.Body))
+
+				rsp <- delivery.Body
+
+				return
+			}
+
+			rspChan <- delivery
+		case <-ticker.C:
+			log.Println("Mes请求消息发送超时", msg.CorraltedId)
+			rsp <- nil
+
+			return
+		}
+	}
+}
