@@ -7,11 +7,7 @@ const (
 )
 
 type MqMessage struct {
-	Msg         MqMessageBody
+	Msg         []byte
 	CorraltedId string
 	IsEvent     bool
-}
-
-type MqMessageBody interface {
-	MarshalByte() []byte
 }

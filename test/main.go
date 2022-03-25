@@ -3,10 +3,11 @@ package main
 import (
 	"encoding/xml"
 	"fmt"
-	"github.com/dualm/mq"
-	"github.com/dualm/mq/tibco"
 	"log"
 	"time"
+
+	"github.com/dualm/mq"
+	"github.com/dualm/mq/tibco"
 
 	"github.com/spf13/viper"
 )
@@ -47,7 +48,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Println(string(req[0].Msg.MarshalByte()))
+	log.Println(string(req[0].Msg))
 
 	go tibco.Send(v.GetString("TargetSubjectName"), v.GetString("TibcoFieldName"), rspChan, req)
 
@@ -61,7 +62,7 @@ func main() {
 	log.Println("Recipe Verified")
 }
 
-type RecipeValidationReuqest struct {
+type RecipeValidationRequest struct {
 	XMLName       xml.Name    `xml:"Message"`
 	Header        Header      `xml:"Header"`
 	MachineName   string      `xml:"Body>MACHINENAME"`
@@ -73,7 +74,7 @@ type RecipeValidationReuqest struct {
 	ReturnMessage string      `xml:"Return>RETURNMESSAGE"`
 }
 
-func (req *RecipeValidationReuqest) MarshalByte() []byte {
+func (req *RecipeValidationRequest) MarshalByte() []byte {
 	return MarshalByte(req)
 }
 
@@ -124,7 +125,7 @@ type Parameter struct {
 
 func NewRecipeValidationRequest(lotName, recipeName string, parameters []Parameter) ([]mq.MqMessage, error) {
 	header := NewHeader("RecipeParameterValidationRequest")
-	_rcpReq := RecipeValidationReuqest{
+	_rcpReq := RecipeValidationRequest{
 		Header:        header,
 		MachineName:   header.MachineName,
 		LotName:       lotName,
@@ -135,18 +136,18 @@ func NewRecipeValidationRequest(lotName, recipeName string, parameters []Paramet
 
 	return []mq.MqMessage{
 		{
-			Msg:     &_rcpReq,
+			Msg:     _rcpReq.MarshalByte(),
 			IsEvent: false,
 		},
 	}, nil
 }
 
-func RecipeValidationDecoder(b []byte) (*RecipeValidationReuqest, error) {
+func RecipeValidationDecoder(b []byte) (*RecipeValidationRequest, error) {
 	if b == nil {
 		return nil, fmt.Errorf("invalid recipe validation result")
 	}
 
-	rsp := new(RecipeValidationReuqest)
+	rsp := new(RecipeValidationRequest)
 
 	if err := xml.Unmarshal(b, rsp); err != nil {
 		return nil, err

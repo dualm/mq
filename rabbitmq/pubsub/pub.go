@@ -1,9 +1,10 @@
 package pubsub
 
 import (
+	"log"
+
 	"github.com/dualm/mq"
 	"github.com/dualm/mq/rabbitmq"
-	"log"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -37,13 +38,13 @@ func publish(sessions chan chan rabbitmq.Session, exchange, routingKey, replyQue
 				}
 
 				if !confirmed.Ack {
-					log.Printf("nack message %d, body: %q", confirmed.DeliveryTag, body.Msg.MarshalByte())
+					log.Printf("nack message %d, body: %q", confirmed.DeliveryTag, body.Msg)
 				}
 
 				reading = messages
 			case body = <-pending:
 				err := pub.Channel.Publish(exchange, routingKey, false, false, amqp.Publishing{
-					Body:          body.Msg.MarshalByte(),
+					Body:          body.Msg,
 					CorrelationId: body.CorraltedId,
 					ReplyTo: func() string {
 						if body.IsEvent {

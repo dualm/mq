@@ -9,7 +9,7 @@ import (
 func Send(targetSubjectName, fieldName string, c chan<- []byte, msg []mq.MqMessage) {
 	for _, m := range msg {
 		if m.IsEvent {
-			err := tibSend(targetSubjectName, fieldName, string(m.Msg.MarshalByte()))
+			err := tibSend(targetSubjectName, fieldName, string(m.Msg))
 
 			if err != nil {
 				fmt.Println(err)
@@ -17,7 +17,7 @@ func Send(targetSubjectName, fieldName string, c chan<- []byte, msg []mq.MqMessa
 				return
 			}
 		} else {
-			re, err := tibSendRequest(targetSubjectName, fieldName, string(m.Msg.MarshalByte()))
+			re, err := tibSendRequest(targetSubjectName, fieldName, string(m.Msg))
 			if err != nil {
 				fmt.Printf("%s, %s\n", err, m.Msg)
 
