@@ -2,23 +2,16 @@ package rpc
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"time"
 
-	"github.com/dualm/mq"
 	"github.com/dualm/mq/rabbitmq"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-var (
-	requestChan = make(chan mq.MqMessage)
-	reqChan     = make(chan mq.MqMessage)
-	subChan     = make(chan bool, 10)
-	rspChan     = make(chan amqp.Delivery)
-)
-
-func redial(c context.Context, url, queue, vhost string) chan chan rabbitmq.Session {
+func redial(c context.Context, url, queue, vhost string,
+	infoChan chan<- string, _ chan<- error) chan chan rabbitmq.Session {
 	sessions := make(chan chan rabbitmq.Session)
 
 	go func() {
@@ -29,7 +22,7 @@ func redial(c context.Context, url, queue, vhost string) chan chan rabbitmq.Sess
 			select {
 			case sessions <- sess:
 			case <-c.Done():
-				log.Println("shutting down rabbitmq.Session factory")
+				infoChan <- ("shutting down rabbitmq.Session factory")
 
 				return
 			}
@@ -38,7 +31,7 @@ func redial(c context.Context, url, queue, vhost string) chan chan rabbitmq.Sess
 				Vhost: vhost,
 			})
 			if err != nil {
-				log.Printf("cannot (re)dial: %v: %q", err, url)
+				infoChan <- fmt.Sprintf("cannot (re)dial: %v: %q", err, url)
 
 				time.Sleep(time.Minute)
 
@@ -47,7 +40,7 @@ func redial(c context.Context, url, queue, vhost string) chan chan rabbitmq.Sess
 
 			ch, err := conn.Channel()
 			if err != nil {
-				log.Printf("cannot create channel: %v", err)
+				infoChan <- fmt.Sprintf("cannot create channel: %v", err)
 
 				time.Sleep(time.Minute)
 
@@ -56,7 +49,7 @@ func redial(c context.Context, url, queue, vhost string) chan chan rabbitmq.Sess
 
 			_, err = ch.QueueDeclare(queue, true, true, false, false, nil)
 			if err != nil {
-				log.Printf("cannot declare queue: %v", err)
+				infoChan <- fmt.Sprintf("cannot declare queue: %v", err)
 
 				time.Sleep(time.Minute)
 
@@ -66,7 +59,7 @@ func redial(c context.Context, url, queue, vhost string) chan chan rabbitmq.Sess
 			select {
 			case sess <- rabbitmq.Session{Connection: conn, Channel: ch}:
 			case <-c.Done():
-				log.Println("shutting down new rabbitmq.Session")
+				infoChan <- "shutting down new rabbitmq.Session"
 
 				return
 			}
@@ -74,33 +67,4 @@ func redial(c context.Context, url, queue, vhost string) chan chan rabbitmq.Sess
 	}()
 
 	return sessions
-}
-
-func sendRequest(duration time.Duration, msg mq.MqMessage, rsp chan<- []byte) {
-	// 发送数据
-	subChan <- true
-	reqChan <- msg
-	// 计时开始
-	ticker := time.NewTicker(duration)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case delivery := <-rspChan:
-			if delivery.CorrelationId == msg.CorraltedId {
-				log.Printf("Got Response: \n%s", string(delivery.Body))
-
-				rsp <- delivery.Body
-
-				return
-			}
-
-			rspChan <- delivery
-		case <-ticker.C:
-			log.Println("Mes请求消息发送超时", msg.CorraltedId)
-			rsp <- nil
-
-			return
-		}
-	}
 }

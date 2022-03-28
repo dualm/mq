@@ -7,7 +7,7 @@ import (
 const (
 	URLFORMAT           = "amqp://%s:%s@%s:%s"
 	RbtUsername         = "Username"
-	RbtPassword         = "PassWord"
+	RbtPassword         = "Password"
 	RbtHost             = "Host"
 	RbtPort             = "Port"
 	RbtTargetExchange   = "TargetExchange"
@@ -15,6 +15,8 @@ const (
 	RbtQueue            = "Queue"
 	RbtEapQueue         = "EapQueue"
 	RbtVHost            = "Vhost"
+
+	ChanBufferSize = 10
 )
 
 type Session struct {

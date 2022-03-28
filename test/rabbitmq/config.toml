@@ -1,0 +1,17 @@
+Host = "10.1.14.30"
+Password = "adm123"
+Port = "5672"
+Username = "manager"
+Vhost = "/zl"
+Queue = "ZL.FMM.MES.TEST.PEXsvr"
+TargetExchange = "MES.TEST.SVR"
+TargetRoutingKey = "MES.TEST.EAP.PEXsvr"
+EapQueue = "MES.DEV.EDGE.G0"
+Exchange = "MES.DEV.EAP"
+QueryTargetRoutingKey = "MES.TEST.EAP.PEXsvr"
+
+Charset = "UTF-8"
+FieldName = "Message"
+Language = "English"
+TimeOut = 60
+

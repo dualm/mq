@@ -1,7 +1,8 @@
 package pubsub
 
 import (
-	"log"
+	"context"
+	"fmt"
 
 	"github.com/dualm/mq"
 	"github.com/dualm/mq/rabbitmq"
@@ -9,7 +10,8 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-func publish(sessions chan chan rabbitmq.Session, exchange, routingKey, replyQueue string, messages <-chan mq.MqMessage) {
+func publish(ctx context.Context, sessions chan chan rabbitmq.Session, exchange, routingKey, replyQueue string,
+	messages <-chan mq.MqMessage, infoChan chan<- string, errChan chan<- error) {
 	for session := range sessions {
 		var (
 			running bool
@@ -21,7 +23,7 @@ func publish(sessions chan chan rabbitmq.Session, exchange, routingKey, replyQue
 		pub := <-session
 
 		if err := pub.Channel.Confirm(false); err != nil {
-			log.Println("publisher confirms not supported")
+			infoChan <- "publisher confirms not supported"
 
 			close(confirm)
 		} else {
@@ -32,13 +34,15 @@ func publish(sessions chan chan rabbitmq.Session, exchange, routingKey, replyQue
 		for {
 			var body mq.MqMessage
 			select {
+			case <-ctx.Done():
+				return
 			case confirmed, ok := <-confirm:
 				if !ok {
 					break Publish
 				}
 
 				if !confirmed.Ack {
-					log.Printf("nack message %d, body: %q", confirmed.DeliveryTag, body.Msg)
+					infoChan <- fmt.Sprintf("nack message %d, body: %q", confirmed.DeliveryTag, body.Msg)
 				}
 
 				reading = messages
@@ -56,7 +60,7 @@ func publish(sessions chan chan rabbitmq.Session, exchange, routingKey, replyQue
 				})
 
 				if err != nil {
-					log.Println(err)
+					errChan <- fmt.Errorf("pub message error, Error: %w", err)
 
 					pending <- body
 					pub.Close()
