@@ -7,21 +7,20 @@ import (
 	"github.com/dualm/mq"
 	"github.com/dualm/mq/rabbitmq"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"github.com/spf13/viper"
 )
 
-func NewPubsub() *PubSub {
-	return &PubSub{
+func New(infoChan chan<- string, errChan chan<- error) mq.Mq {
+	return &pubSub{
 		eveChan:  make(chan mq.MqMessage, rabbitmq.ChanBufferSize),
 		reqChan:  make(chan mq.MqMessage, rabbitmq.ChanBufferSize),
 		subChan:  make(chan struct{}, rabbitmq.ChanBufferSize),
 		rspChan:  make(chan amqp.Delivery, rabbitmq.ChanBufferSize),
-		errChan:  make(chan<- error, rabbitmq.ChanBufferSize),
-		infoChan: make(chan<- string, rabbitmq.ChanBufferSize),
+		errChan:  errChan,
+		infoChan: infoChan,
 	}
 }
 
-type PubSub struct {
+type pubSub struct {
 	eveChan  chan mq.MqMessage
 	reqChan  chan mq.MqMessage
 	subChan  chan struct{}
@@ -30,16 +29,14 @@ type PubSub struct {
 	infoChan chan<- string
 }
 
-func (ps *PubSub) Run(ctx context.Context, configID string,
-	initconfig func(id string) *viper.Viper, infoChan chan<- string, errChan chan<- error) {
-	ps.errChan = errChan
-	ps.infoChan = infoChan
+func (ps *pubSub) Run(ctx context.Context, configID string, initconfig mq.ConfigFunc) error {
+	conf, err := initconfig(configID)
+	if err != nil {
+		return fmt.Errorf("rabbitmq/pubsub init config error, Error: %w", err)
+	}
 
-	conf := initconfig(configID)
 	if conf == nil {
-		errChan <- fmt.Errorf("nil config")
-
-		return
+		return fmt.Errorf("rabbitmq/pubsub nil config")
 	}
 
 	url := fmt.Sprintf(
@@ -53,29 +50,31 @@ func (ps *PubSub) Run(ctx context.Context, configID string,
 	vhost := conf.GetString(rabbitmq.RbtVHost)
 	targetExchange := conf.GetString(rabbitmq.RbtTargetExchange)
 	routingKey := conf.GetString(rabbitmq.RbtTargetRoutingKey)
-	rspQueue := conf.GetString(rabbitmq.RbtEapQueue)
+	rspQueue := conf.GetString(rabbitmq.RbtClientQueue)
 
 	// event
 	go func() {
 		publish(
-			ctx, redial(ctx, url, targetExchange, vhost, infoChan, errChan),
-			targetExchange, routingKey, rspQueue, ps.eveChan, infoChan, errChan)
+			ctx, redial(ctx, url, targetExchange, vhost, ps.infoChan, ps.errChan),
+			targetExchange, routingKey, rspQueue, ps.eveChan, ps.infoChan, ps.errChan)
 	}()
 
 	go func() {
 		publish(
-			ctx, redial(ctx, url, targetExchange, vhost, infoChan, errChan),
-			targetExchange, routingKey, rspQueue, ps.reqChan, infoChan, errChan)
+			ctx, redial(ctx, url, targetExchange, vhost, ps.infoChan, ps.errChan),
+			targetExchange, routingKey, rspQueue, ps.reqChan, ps.infoChan, ps.errChan)
 	}()
 
 	go func() {
 		subscribe(
-			ctx, redial(ctx, url, targetExchange, vhost, infoChan, errChan),
-			targetExchange, rspQueue, rspQueue, ps.rspChan, ps.subChan, infoChan, errChan)
+			ctx, redial(ctx, url, targetExchange, vhost, ps.infoChan, ps.errChan),
+			targetExchange, rspQueue, rspQueue, ps.rspChan, ps.subChan, ps.infoChan, ps.errChan)
 	}()
+
+	return nil
 }
 
-func (ps *PubSub) Send(ctx context.Context, c chan<- []byte, msg []mq.MqMessage) {
+func (ps *pubSub) Send(ctx context.Context, c chan<- mq.MqResponse, msg []mq.MqMessage) {
 	for i := range msg {
 		if msg[i].IsEvent {
 			ps.send(msg[i])
@@ -85,29 +84,36 @@ func (ps *PubSub) Send(ctx context.Context, c chan<- []byte, msg []mq.MqMessage)
 	}
 }
 
-func (ps *PubSub) send(msg mq.MqMessage) {
+func (ps *pubSub) send(msg mq.MqMessage) {
 	ps.eveChan <- msg
 }
 
-func (ps *PubSub) sendRequest(ctx context.Context, msg mq.MqMessage, rsp chan<- []byte) {
+func (ps *pubSub) sendRequest(ctx context.Context, msg mq.MqMessage, rsp chan<- mq.MqResponse) {
 	// 发送数据
 	ps.subChan <- struct{}{}
 	ps.reqChan <- msg
 
 	select {
 	case <-ctx.Done():
-		ps.errChan <- fmt.Errorf("Mes请求消息发送超时: %s", msg.CorraltedId)
-
-		rsp <- nil
+		rsp <- mq.MqResponse{
+			Msg: nil,
+			Err: fmt.Errorf("rabbitmq/pubsub SendRequest timeout: %s", msg.CorraltedId),
+		}
 
 		return
 	case delivery := <-ps.rspChan:
 		if delivery.CorrelationId == msg.CorraltedId {
-			rsp <- delivery.Body
+			rsp <- mq.MqResponse{
+				Msg: delivery.Body,
+				Err: nil,
+			}
 
 			return
 		}
 
 		ps.rspChan <- delivery
 	}
+}
+
+func (ps *pubSub) Close(_ context.Context) {
 }

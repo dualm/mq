@@ -11,20 +11,25 @@ import (
 	"github.com/dualm/mq/rabbitmq"
 )
 
-func publish(ctx context.Context, sessions chan chan rabbitmq.Session, queue string,
-	messages <-chan mq.MqMessage, infoChan chan<- string, errChan chan<- error) {
+func publish(ctx context.Context,
+	sessions chan chan rabbitmq.Session,
+	queue,cQueue string,
+	messageChan <-chan mq.MqMessage,
+	responseChan chan<- mq.MqResponse, infoChan chan<- string, errChan chan<- error) {
 	for session := range sessions {
 		var (
 			running bool
-			reading = messages
+			reading = messageChan
 			pending = make(chan mq.MqMessage, 1)
 			confirm = make(chan amqp.Confirmation, 1)
+			getting = make(<-chan amqp.Delivery, 1)
+			body    mq.MqMessage
 		)
 
 		pub := <-session
 
 		if err := pub.Channel.Confirm(false); err != nil {
-			infoChan <- "publisher confirms not supported"
+			infoChan <- "rabbitmq/rpc publisher confirms not supported"
 
 			close(confirm)
 		} else {
@@ -33,7 +38,6 @@ func publish(ctx context.Context, sessions chan chan rabbitmq.Session, queue str
 
 	Publish:
 		for {
-			var body mq.MqMessage
 			select {
 			case <-ctx.Done():
 				return
@@ -43,23 +47,49 @@ func publish(ctx context.Context, sessions chan chan rabbitmq.Session, queue str
 				}
 
 				if !confirmed.Ack {
-					infoChan <- fmt.Sprintf("nack message %d, body: %q", confirmed.DeliveryTag, body.Msg)
+					infoChan <- fmt.Sprintf("rabbitmq/rpc nack message %d, body: %q", confirmed.DeliveryTag, body.Msg)
 				}
 
-				reading = messages
+				reading = messageChan
 			case body = <-pending:
+				if !body.IsEvent {
+					msgs, err := pub.Channel.Consume(cQueue, "", true, false, false, false, nil)
+					if err != nil {
+						errChan <- err
+
+						continue
+					}
+
+					getting = msgs
+				}
+
 				err := pub.Channel.Publish("", queue, false, false, amqp.Publishing{
 					Body:    body.Msg,
-					ReplyTo: queue,
+					ReplyTo: cQueue,
 				})
 
 				if err != nil {
-					errChan <- fmt.Errorf("pub message error, Error: %w", err)
+					responseChan <- mq.MqResponse{
+						Msg: nil,
+						Err: fmt.Errorf("rabbitmq/rpc pub message error, Error: %w", err),
+					}
 
-					pending <- body
 					pub.Close()
 
 					break Publish
+				}
+
+				if !body.IsEvent {
+					i := <-getting
+					responseChan <- mq.MqResponse{
+						Msg: i.Body,
+						Err: nil,
+					}
+				} else {
+					responseChan <- mq.MqResponse{
+						Msg: nil,
+						Err: nil,
+					}
 				}
 			case body, running = <-reading:
 				if !running {

@@ -3,6 +3,7 @@ module github.com/dualm/mq
 go 1.17
 
 require (
+	github.com/dualm/zispc v0.0.9
 	github.com/rabbitmq/amqp091-go v1.3.0
 	github.com/spf13/viper v1.10.1
 )

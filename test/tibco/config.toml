@@ -1,14 +1,14 @@
-TibcoService="8200"
-TibcoNetwork=";225.11.11.2"
-TibcoFieldName="Message"
-TibcoDaemon=[
-    "tcp:121.196.187.214:7500",
+EventComment = "RecipeParameterValidationRequest"
+EventUser = "CLN001"
+Listener = "PEMListener"
+MachineName = "CLN001"
+OriginalSourceSubjectName = "PARKKW_TEST"
+ShopName = "CELL"
+SourceSubjectName = "EAS"
+TibcoDaemon = [
+  "tcp:121.196.187.214:7500",
 ]
-ShopName="CELL"
-MachineName="CLN001"
-OriginalSourceSubjectName="PARKKW_TEST"
-SourceSubjectName="EAS"
-TargetSubjectName="BOE.B9.MES.TEST.FAB.PEMsvr"
-EventUser="CLN001"
-EventComment="RecipeParameterValidationRequest"
-Listener="PEMListener"
+TibcoFieldName = "Message"
+TibcoNetwork = ";225.11.11.2"
+TibcoService = "8200"
+TibcoTargetSubjectName = "BOE.B9.MES.TEST.FAB.PEMsvr"

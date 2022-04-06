@@ -22,7 +22,7 @@ func redial(c context.Context, url, queue, vhost string,
 			select {
 			case sessions <- sess:
 			case <-c.Done():
-				infoChan <- ("shutting down rabbitmq.Session factory")
+				infoChan <- ("rabbitmq/rpc shutting down rabbitmq.Session factory")
 
 				return
 			}
@@ -31,7 +31,7 @@ func redial(c context.Context, url, queue, vhost string,
 				Vhost: vhost,
 			})
 			if err != nil {
-				infoChan <- fmt.Sprintf("cannot (re)dial: %v: %q", err, url)
+				infoChan <- fmt.Sprintf("rabbitmq/rpc cannot (re)dial: %v: %q", err, url)
 
 				time.Sleep(time.Minute)
 
@@ -40,7 +40,7 @@ func redial(c context.Context, url, queue, vhost string,
 
 			ch, err := conn.Channel()
 			if err != nil {
-				infoChan <- fmt.Sprintf("cannot create channel: %v", err)
+				infoChan <- fmt.Sprintf("rabbitmq/rpc cannot create channel: %v", err)
 
 				time.Sleep(time.Minute)
 
@@ -49,7 +49,7 @@ func redial(c context.Context, url, queue, vhost string,
 
 			_, err = ch.QueueDeclare(queue, true, true, false, false, nil)
 			if err != nil {
-				infoChan <- fmt.Sprintf("cannot declare queue: %v", err)
+				infoChan <- fmt.Sprintf("rabbitmq/rpc cannot declare queue: %v", err)
 
 				time.Sleep(time.Minute)
 
@@ -59,7 +59,7 @@ func redial(c context.Context, url, queue, vhost string,
 			select {
 			case sess <- rabbitmq.Session{Connection: conn, Channel: ch}:
 			case <-c.Done():
-				infoChan <- "shutting down new rabbitmq.Session"
+				infoChan <- "rabbitmq/rpc shutting down new rabbitmq.Session"
 
 				return
 			}

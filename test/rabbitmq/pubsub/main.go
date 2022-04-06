@@ -15,16 +15,19 @@ import (
 )
 
 func main() {
-	pb := pubsub.NewPubsub()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	infoChan := make(chan string, 10)
 	errChan := make(chan error, 10)
 
-	pb.Run(ctx, "config", InitConfig, infoChan, errChan)
+	pb := pubsub.New(infoChan, errChan)
+	if err := pb.Run(ctx, "config", InitConfig); err != nil {
+		log.Fatal(err)
+	}
 
-	rsp := make(chan []byte)
+	rsp := make(chan mq.MqResponse)
+
 	msg := NewAreYouThereReq("TestEQP", "ZLFMM")
 
 	log.Println(string(msg.Msg))
@@ -40,15 +43,15 @@ func main() {
 		select {
 		case <-ctx.Done():
 			return
-		case <- ctxQuery.Done():
+		case <-ctxQuery.Done():
 			return
 		case info := <-infoChan:
 			log.Println(info)
 		case err := <-errChan:
 			log.Fatal(err)
 		case re := <-rsp:
-			log.Println(string(re))
-			_, err := AreYouThereDecoder(re)
+			log.Println(string(re.Msg))
+			_, err := AreYouThereDecoder(re.Msg)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -58,17 +61,19 @@ func main() {
 	}
 }
 
-func InitConfig(configId string) *viper.Viper {
+func InitConfig(configId string) (*viper.Viper, error) {
 	conf := viper.New()
+
 	conf.SetConfigType("toml")
 	conf.SetConfigName(strings.ToLower(configId))
 	conf.AddConfigPath(".")
+
 	err := conf.ReadInConfig()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	return conf
+	return conf, nil
 }
 
 type AreYouThereReq struct {

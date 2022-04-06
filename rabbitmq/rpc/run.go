@@ -7,34 +7,32 @@ import (
 	"github.com/dualm/mq"
 
 	"github.com/dualm/mq/rabbitmq"
-
-	"github.com/spf13/viper"
 )
 
-func NewRpc() *Rpc {
-	return &Rpc{
-		requestChan: make(chan mq.MqMessage, rabbitmq.ChanBufferSize),
-		infoChan:    make(chan<- string),
-		errChan:     make(chan<- error),
+func New(infoChan chan<- string, errChan chan<- error) mq.Mq {
+	return &rpc{
+		requestChan: make(chan mq.MqMessage),
+		response:    make(chan mq.MqResponse),
+		infoChan:    infoChan,
+		errChan:     errChan,
 	}
 }
 
-type Rpc struct {
+type rpc struct {
 	requestChan chan mq.MqMessage
+	response    chan mq.MqResponse
 	infoChan    chan<- string
 	errChan     chan<- error
 }
 
-func (r *Rpc) Run(ctx context.Context, configId string, initconfig func(id string) *viper.Viper,
-	infoChan chan<- string, errChan chan<- error) {
-	r.infoChan = infoChan
-	r.errChan = errChan
+func (r *rpc) Run(ctx context.Context, configId string, initConfig mq.ConfigFunc) error {
+	conf, err := initConfig(configId)
+	if err != nil {
+		return fmt.Errorf("rabbitmq/rpc init config error, Error: %w", err)
+	}
 
-	conf := initconfig(configId)
 	if conf == nil {
-		errChan <- fmt.Errorf("nil config")
-
-		return
+		return fmt.Errorf("rabbitmq/rpc nil config")
 	}
 
 	url := fmt.Sprintf(
@@ -47,13 +45,24 @@ func (r *Rpc) Run(ctx context.Context, configId string, initconfig func(id strin
 
 	queue := conf.GetString(rabbitmq.RbtQueue)
 	vhost := conf.GetString(rabbitmq.RbtVHost)
+	clientQueue := conf.GetString(rabbitmq.RbtClientQueue)
 
 	go func() {
-		publish(ctx, redial(ctx, url, queue, vhost, infoChan, errChan),
-			queue, r.requestChan, infoChan, errChan)
+		publish(ctx, redial(ctx, url, queue, vhost, r.infoChan, r.errChan),
+			queue, clientQueue, r.requestChan, r.response, r.infoChan, r.errChan)
 	}()
+
+	return nil
 }
 
-func (r *Rpc) Send(_ chan<- []byte, msg mq.MqMessage) {
-	r.requestChan <- msg
+func (r *rpc) Send(_ context.Context, responseChan chan<- mq.MqResponse, msg []mq.MqMessage) {
+	for i := range msg {
+		m := msg[i]
+		r.requestChan <- m
+		x := <-r.response
+		responseChan <- x
+	}
+}
+
+func (r *rpc) Close(_ context.Context) {
 }

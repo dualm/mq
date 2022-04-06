@@ -13,7 +13,7 @@ const (
 	RbtTargetExchange   = "TargetExchange"
 	RbtTargetRoutingKey = "TargetRoutingKey"
 	RbtQueue            = "Queue"
-	RbtEapQueue         = "EapQueue"
+	RbtClientQueue      = "EapQueue"
 	RbtVHost            = "Vhost"
 
 	ChanBufferSize = 10

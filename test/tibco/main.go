@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/xml"
 	"fmt"
 	"log"
@@ -12,29 +13,21 @@ import (
 	"github.com/spf13/viper"
 )
 
-var v *viper.Viper
-
 func main() {
-	var err error
-	v, err = InitConfig()
-	if err != nil {
+	infoChan := make(chan string)
+	errChan := make(chan error)
+
+	tib := tibco.New(infoChan, errChan)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+
+	if err := tib.Run(ctx, "config", InitConfig); err != nil {
 		log.Fatal(err)
 	}
 
-	tibcoService := v.GetString("TibcoService")
-	tibcoNetwork := v.GetString("TibcoNetwork")
-	tibcoDaemons := v.GetStringSlice("TibcoDaemon")
+	rspChan := make(chan mq.MqResponse)
 
-	if tibcoService == "" || tibcoNetwork == "" {
-		log.Fatal("Tibco参数未配置，请联系管理员")
-	}
-
-	if err := tibco.TibInit(tibcoService, tibcoNetwork, tibcoDaemons); err != nil {
-		panic(err)
-	}
-	defer tibco.TibDestroy()
-
-	rspChan := make(chan []byte)
 	req, err := NewRecipeValidationRequest("ACAB661B15010S001", "TEST01", []Parameter{
 		{
 			ItemName:  "P01",
@@ -50,11 +43,14 @@ func main() {
 
 	log.Println(string(req[0].Msg))
 
-	go tibco.Send(v.GetString("TargetSubjectName"), v.GetString("TibcoFieldName"), rspChan, req)
+	go tib.Send(ctx, rspChan, req)
 
 	result := <-rspChan
+	if err := result.Err; err != nil {
+		log.Fatal(err)
+	}
 
-	_, err = RecipeValidationDecoder(result)
+	_, err = RecipeValidationDecoder(result.Msg)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -103,6 +99,11 @@ type Header struct {
 }
 
 func NewHeader(messageName string) Header {
+	v, err := InitConfig("config")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return Header{
 		MessageName:               messageName,
 		ShopName:                  v.GetString("ShopName"),
@@ -183,10 +184,10 @@ func NewRecipeReturnCodeError(machineName, returnCode, returnMesssage string, ng
 	)
 }
 
-func InitConfig() (*viper.Viper, error) {
+func InitConfig(conf string) (*viper.Viper, error) {
 	v := viper.New()
 
-	v.SetConfigName("config")
+	v.SetConfigName(conf)
 	v.SetConfigType("toml")
 	v.AddConfigPath(".")
 
@@ -196,15 +197,6 @@ func InitConfig() (*viper.Viper, error) {
 	}
 
 	return v, nil
-}
-
-func CheckConfig(conf *viper.Viper, key, description string) string {
-	value := conf.GetString(key)
-	if value == "" {
-		log.Fatalln(description + "未设置，请咨询管理员")
-	}
-
-	return value
 }
 
 func getTransactionId() string {

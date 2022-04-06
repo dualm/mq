@@ -21,7 +21,7 @@ func redial(ctx context.Context, url, exchange, vhost string,
 			select {
 			case sessions <- sess:
 			case <-ctx.Done():
-				infoChan <- "shutting down rabbitmq.Session factory"
+				infoChan <- "rabbitmq/pubsub shutting down rabbitmq.Session factory"
 
 				return
 			}
@@ -30,7 +30,7 @@ func redial(ctx context.Context, url, exchange, vhost string,
 				Vhost: vhost,
 			})
 			if err != nil {
-				infoChan <- fmt.Sprintf("cannot (re)dial: %v: %q", err, url)
+				infoChan <- fmt.Sprintf("rabbitmq/pubsub cannot (re)dial: %v: %q", err, url)
 
 				time.Sleep(time.Minute)
 
@@ -39,7 +39,7 @@ func redial(ctx context.Context, url, exchange, vhost string,
 
 			ch, err := conn.Channel()
 			if err != nil {
-				infoChan <- fmt.Sprintf("cannot create channel: %v", err)
+				infoChan <- fmt.Sprintf("rabbitmq/pubsub cannot create channel: %v", err)
 
 				time.Sleep(time.Minute)
 
@@ -47,7 +47,7 @@ func redial(ctx context.Context, url, exchange, vhost string,
 			}
 
 			if err := ch.ExchangeDeclare(exchange, "topic", true, false, false, false, nil); err != nil {
-				infoChan <- fmt.Sprintf("cannot declare topic exchange: %v", err)
+				infoChan <- fmt.Sprintf("rabbitmq/pubsub cannot declare topic exchange: %v", err)
 
 				time.Sleep(time.Minute)
 
@@ -57,7 +57,7 @@ func redial(ctx context.Context, url, exchange, vhost string,
 			select {
 			case sess <- rabbitmq.Session{Connection: conn, Channel: ch}:
 			case <-ctx.Done():
-				errChan <- fmt.Errorf("shutting down new rabbitmq.Session")
+				errChan <- fmt.Errorf("rabbitmq/pubsub shutting down new rabbitmq.Session")
 
 				return
 			}

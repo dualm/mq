@@ -23,7 +23,7 @@ func publish(ctx context.Context, sessions chan chan rabbitmq.Session, exchange,
 		pub := <-session
 
 		if err := pub.Channel.Confirm(false); err != nil {
-			infoChan <- "publisher confirms not supported"
+			infoChan <- "rabbitmq/pubsub publisher confirms not supported"
 
 			close(confirm)
 		} else {
@@ -42,7 +42,7 @@ func publish(ctx context.Context, sessions chan chan rabbitmq.Session, exchange,
 				}
 
 				if !confirmed.Ack {
-					infoChan <- fmt.Sprintf("nack message %d, body: %q", confirmed.DeliveryTag, body.Msg)
+					infoChan <- fmt.Sprintf("rabbitmq/pubsub nack message %d, body: %q", confirmed.DeliveryTag, body.Msg)
 				}
 
 				reading = messages
@@ -60,7 +60,7 @@ func publish(ctx context.Context, sessions chan chan rabbitmq.Session, exchange,
 				})
 
 				if err != nil {
-					errChan <- fmt.Errorf("pub message error, Error: %w", err)
+					errChan <- fmt.Errorf("rabbitmq/pubsub pub message error, Error: %w", err)
 
 					pending <- body
 					pub.Close()
