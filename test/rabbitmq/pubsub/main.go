@@ -39,6 +39,14 @@ func main() {
 		msg,
 	})
 
+	go pb.Send(ctxQuery, rsp, []mq.MqMessage{
+		{
+			Msg:         []byte{},
+			CorraltedId: "",
+			IsEvent:     false,
+		},
+	})
+
 	for {
 		select {
 		case <-ctx.Done():

@@ -60,14 +60,22 @@ func (t *tibcoMq) Run(ctx context.Context, configID string, initConfig mq.Config
 	return nil
 }
 
-func (t *tibcoMq) Send(ctx context.Context, c chan<- mq.MqResponse, msg []mq.MqMessage) {
+func (t *tibcoMq) Send(ctx context.Context, responseChan chan<- mq.MqResponse, msg []mq.MqMessage) {
 	for _, m := range msg {
+		if m.Msg == nil {
+			if responseChan != nil {
+				responseChan <- mq.MqResponse{}
+			}
+
+			continue
+		}
+
 		err := t.makeMsg(t.targetSubjectName, t.fieldName, string(m.Msg))
 
 		if err != nil {
-			c <- mq.MqResponse{
+			responseChan <- mq.MqResponse{
 				Msg: nil,
-				Err: fmt.Errorf("tibco send error, %w", err),
+				Err: fmt.Errorf("make tibco message error, %w", err),
 			}
 
 			return
@@ -78,7 +86,7 @@ func (t *tibcoMq) Send(ctx context.Context, c chan<- mq.MqResponse, msg []mq.MqM
 		} else {
 			re, err := t.sendRequest(ctx)
 			if err != nil {
-				c <- mq.MqResponse{
+				responseChan <- mq.MqResponse{
 					Msg: nil,
 					Err: fmt.Errorf("%s, %s\n", err, m.Msg),
 				}
@@ -86,7 +94,7 @@ func (t *tibcoMq) Send(ctx context.Context, c chan<- mq.MqResponse, msg []mq.MqM
 				continue
 			}
 
-			c <- mq.MqResponse{
+			responseChan <- mq.MqResponse{
 				Msg: []byte(re),
 				Err: err,
 			}
@@ -110,18 +118,18 @@ func (t *tibcoMq) sendRequest(ctx context.Context) (string, error) {
 	go func() {
 		_re, err := t.transport.sendRequest(t.message, TIBCO_MAX_WAITING_TIME)
 		if err != nil {
-			errChan <- err
+			errChan <- fmt.Errorf("send request error, Error: %w", err)
 
 			return
 		}
 
-		defer func(){
+		defer func() {
 			_re.Destroy()
 		}()
 
 		s, err := _re.GetString(t.fieldName, 0)
 		if err != nil {
-			errChan <- err
+			errChan <- fmt.Errorf("GetString from response error, Error: %w", err)
 
 			return
 		}
@@ -142,15 +150,15 @@ func (t *tibcoMq) sendRequest(ctx context.Context) (string, error) {
 func (t *tibcoMq) makeMsg(targetSubjectName, fieldName string, msg string) error {
 	err := t.message.Reset()
 	if err != nil {
-		return err
+		return fmt.Errorf("reset message error, Error: %w", err)
 	}
 
 	if err := t.message.SetSendSubject(targetSubjectName); err != nil {
-		return err
+		return fmt.Errorf("set send subject error, Error: %w", err)
 	}
 
 	if err := t.message.AddString(fieldName, msg, 0); err != nil {
-		return err
+		return fmt.Errorf("add string to message error, Error: %w", err)
 	}
 
 	return nil
@@ -158,7 +166,7 @@ func (t *tibcoMq) makeMsg(targetSubjectName, fieldName string, msg string) error
 
 func (t *tibcoMq) init(service, network string, daemons []string) error {
 	if err := tibrvOpen(); err != nil {
-		return err
+		return fmt.Errorf("tibrv open error, Error: %w", err)
 	}
 
 	t.transport = NewTransport()
@@ -168,13 +176,13 @@ func (t *tibcoMq) init(service, network string, daemons []string) error {
 		network,
 		daemons,
 	); err != nil {
-		return err
+		return fmt.Errorf("creating transport error, Error: %w", err)
 	}
 
 	t.message = NewMessage()
 
 	if err := t.message.Create(); err != nil {
-		return err
+		return fmt.Errorf("create message error, Error: %w", err)
 	}
 
 	return nil

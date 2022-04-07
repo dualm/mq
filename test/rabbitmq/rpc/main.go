@@ -69,6 +69,19 @@ func main() {
 	if re.Err != nil {
 		log.Println(re.Err)
 	}
+
+	r.Send(ctx, rsp, []mq.MqMessage{
+		{
+			Msg:     nil,
+			IsEvent: true,
+		},
+	})
+
+	re = <-rsp
+
+	if re.Err != nil {
+		log.Println(re.Err)
+	}
 }
 
 func InitConfig(configId string) (*viper.Viper, error) {

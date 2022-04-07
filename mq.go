@@ -21,6 +21,6 @@ type ConfigFunc func(id string) (*viper.Viper, error)
 
 type Mq interface {
 	Run(ctx context.Context, configID string, initConfig ConfigFunc) error
-	Send(ctx context.Context, c chan<- MqResponse, msg []MqMessage)
+	Send(ctx context.Context, responseChan chan<- MqResponse, msg []MqMessage)
 	Close(ctx context.Context)
 }

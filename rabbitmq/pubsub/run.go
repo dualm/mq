@@ -74,12 +74,20 @@ func (ps *pubSub) Run(ctx context.Context, configID string, initconfig mq.Config
 	return nil
 }
 
-func (ps *pubSub) Send(ctx context.Context, c chan<- mq.MqResponse, msg []mq.MqMessage) {
+func (ps *pubSub) Send(ctx context.Context, responseChan chan<- mq.MqResponse, msg []mq.MqMessage) {
 	for i := range msg {
+		if len(msg[i].Msg) == 0 {
+			if responseChan != nil {
+				responseChan <- mq.MqResponse{}
+			}
+
+			continue
+		}
+
 		if msg[i].IsEvent {
 			ps.send(msg[i])
 		} else {
-			go ps.sendRequest(ctx, msg[i], c)
+			go ps.sendRequest(ctx, msg[i], responseChan)
 		}
 	}
 }
