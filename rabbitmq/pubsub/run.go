@@ -86,6 +86,10 @@ func (ps *pubSub) Send(ctx context.Context, responseChan chan<- mq.MqResponse, m
 
 		if msg[i].IsEvent {
 			ps.send(msg[i])
+
+			if responseChan != nil {
+				responseChan <- mq.MqResponse{}
+			}
 		} else {
 			go ps.sendRequest(ctx, msg[i], responseChan)
 		}
