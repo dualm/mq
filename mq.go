@@ -20,7 +20,8 @@ type MqResponse struct {
 type ConfigFunc func(id string) (*viper.Viper, error)
 
 type Mq interface {
-	Run(ctx context.Context, configID string, initConfig ConfigFunc) error
+	// Run, configID为配置文件的文件名称，keys为各层节点
+	Run(ctx context.Context, initConfig ConfigFunc, configID string, keys ...string) (map[string]string, error)
 	Send(ctx context.Context, responseChan chan<- MqResponse, msg []MqMessage)
 	Close(ctx context.Context)
 }

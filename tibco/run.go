@@ -9,7 +9,9 @@ import "C"
 import (
 	"context"
 	"fmt"
+	"strings"
 
+	"github.com/dualm/common"
 	"github.com/dualm/mq"
 )
 
@@ -37,27 +39,33 @@ func New(infoChan chan<- string, errChan chan<- error) mq.Mq {
 }
 
 // Run implements mq.Mq
-func (t *tibcoMq) Run(ctx context.Context, configID string, initConfig mq.ConfigFunc) error {
+func (t *tibcoMq) Run(ctx context.Context, initConfig mq.ConfigFunc, configID string, keys ...string) (map[string]string, error) {
 	conf, err := initConfig(configID)
 	if err != nil {
-		return fmt.Errorf("tibco init config error, Error: %w", err)
+		return nil, fmt.Errorf("tibco init config error, Error: %w", err)
 	}
 
 	if conf == nil {
-		return fmt.Errorf("nil config")
+		return nil, fmt.Errorf("nil config")
 	}
 
-	t.service = conf.GetString(TibcoService)
-	t.network = conf.GetString(TibcoNetwork)
-	t.daemon = conf.GetStringSlice(TibcoDaemon)
-	t.fieldName = conf.GetString(TibcoFieldName)
-	t.targetSubjectName = conf.GetString(TibcoSubjectName)
+	t.service = common.GetString(conf, TibcoService, keys...)
+	t.network = common.GetString(conf, TibcoNetwork, keys...)
+	t.daemon = common.GetStringSlice(conf, TibcoDaemon, keys...)
+	t.fieldName = common.GetString(conf, TibcoFieldName, keys...)
+	t.targetSubjectName = common.GetString(conf, TibcoSubjectName, keys...)
 
 	if err := t.init(t.service, t.network, t.daemon); err != nil {
-		return fmt.Errorf("tibco init error, Error: %w", err)
+		return nil, fmt.Errorf("tibco init error, Error: %w", err)
 	}
 
-	return nil
+	return map[string]string{
+		"Service":           t.service,
+		"Network":           t.network,
+		"Daemon":            strings.Join(t.daemon, ","),
+		"FieldName":         t.fieldName,
+		"TargetSubjectName": t.targetSubjectName,
+	}, nil
 }
 
 func (t *tibcoMq) Send(ctx context.Context, responseChan chan<- mq.MqResponse, msg []mq.MqMessage) {

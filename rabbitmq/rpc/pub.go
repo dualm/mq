@@ -13,7 +13,7 @@ import (
 
 func publish(ctx context.Context,
 	sessions chan chan rabbitmq.Session,
-	queue,cQueue string,
+	queue, cQueue string,
 	messageChan <-chan mq.MqMessage,
 	responseChan chan<- mq.MqResponse, infoChan chan<- string, errChan chan<- error) {
 	for session := range sessions {

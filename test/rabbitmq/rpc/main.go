@@ -27,8 +27,10 @@ func main() {
 	errChan := make(chan error, 10)
 
 	r := rpc.New(infoChan, errChan)
-	if err := r.Run(ctx, "config", InitConfig); err != nil {
+	if paras, err := r.Run(ctx, InitConfig, "config", "SPC"); err != nil {
 		log.Fatal(err)
+	} else {
+		log.Println(paras)
 	}
 
 	zispc.UnsetWithS()
@@ -65,6 +67,7 @@ func main() {
 	})
 
 	re := <-rsp
+	log.Println(re)
 
 	if re.Err != nil {
 		log.Println(re.Err)
@@ -78,6 +81,8 @@ func main() {
 	})
 
 	re = <-rsp
+
+	log.Println(re)
 
 	if re.Err != nil {
 		log.Println(re.Err)

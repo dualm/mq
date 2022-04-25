@@ -22,8 +22,10 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
-	if err := tib.Run(ctx, "config", InitConfig); err != nil {
+	if m, err := tib.Run(ctx, InitConfig, ""); err != nil {
 		log.Fatal(err)
+	}else{
+		log.Println(m)
 	}
 
 	rspChan := make(chan mq.MqResponse)

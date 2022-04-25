@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/dualm/common"
 	"github.com/dualm/mq"
 
 	"github.com/dualm/mq/rabbitmq"
@@ -25,34 +26,39 @@ type rpc struct {
 	errChan     chan<- error
 }
 
-func (r *rpc) Run(ctx context.Context, configId string, initConfig mq.ConfigFunc) error {
+func (r *rpc) Run(ctx context.Context, initConfig mq.ConfigFunc, configId string, keys ...string) (map[string]string, error) {
 	conf, err := initConfig(configId)
 	if err != nil {
-		return fmt.Errorf("rabbitmq/rpc init config error, Error: %w", err)
+		return nil, fmt.Errorf("rabbitmq/rpc init config error, Error: %w", err)
 	}
 
 	if conf == nil {
-		return fmt.Errorf("rabbitmq/rpc nil config")
+		return nil, fmt.Errorf("rabbitmq/rpc nil config")
 	}
 
 	url := fmt.Sprintf(
 		rabbitmq.URLFORMAT,
-		conf.GetString(rabbitmq.RbtUsername),
-		conf.GetString(rabbitmq.RbtPassword),
-		conf.GetString(rabbitmq.RbtHost),
-		conf.GetString(rabbitmq.RbtPort),
+		common.GetString(conf, rabbitmq.RbtUsername, keys...),
+		common.GetString(conf, rabbitmq.RbtPassword, keys...),
+		common.GetString(conf, rabbitmq.RbtHost, keys...),
+		common.GetString(conf, rabbitmq.RbtPort, keys...),
 	)
 
-	queue := conf.GetString(rabbitmq.RbtQueue)
-	vhost := conf.GetString(rabbitmq.RbtVHost)
-	clientQueue := conf.GetString(rabbitmq.RbtClientQueue)
+	queue := common.GetString(conf, rabbitmq.RbtQueue, keys...)
+	vhost := common.GetString(conf, rabbitmq.RbtVHost, keys...)
+	clientQueue := common.GetString(conf, rabbitmq.RbtClientQueue, keys...)
 
 	go func() {
 		publish(ctx, redial(ctx, url, queue, vhost, r.infoChan, r.errChan),
 			queue, clientQueue, r.requestChan, r.response, r.infoChan, r.errChan)
 	}()
 
-	return nil
+	return map[string]string{
+		"url":         url,
+		"VHost":       vhost,
+		"Queue":       queue,
+		"ClientQueue": clientQueue,
+	}, nil
 }
 
 func (r *rpc) Send(_ context.Context, responseChan chan<- mq.MqResponse, msg []mq.MqMessage) {
@@ -67,8 +73,7 @@ func (r *rpc) Send(_ context.Context, responseChan chan<- mq.MqResponse, msg []m
 
 		m := msg[i]
 		r.requestChan <- m
-		x := <-r.response
-		responseChan <- x
+		responseChan <- <-r.response
 	}
 }
 

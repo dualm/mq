@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/dualm/common"
 	"github.com/dualm/mq"
 	"github.com/dualm/mq/rabbitmq"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -29,28 +30,28 @@ type pubSub struct {
 	infoChan chan<- string
 }
 
-func (ps *pubSub) Run(ctx context.Context, configID string, initconfig mq.ConfigFunc) error {
-	conf, err := initconfig(configID)
+func (ps *pubSub) Run(ctx context.Context, initConfig mq.ConfigFunc, configID string, keys ...string) (map[string]string, error) {
+	conf, err := initConfig(configID)
 	if err != nil {
-		return fmt.Errorf("rabbitmq/pubsub init config error, Error: %w", err)
+		return nil, fmt.Errorf("rabbitmq/pubsub init config error, Error: %w", err)
 	}
 
 	if conf == nil {
-		return fmt.Errorf("rabbitmq/pubsub nil config")
+		return nil, fmt.Errorf("rabbitmq/pubsub nil config")
 	}
 
 	url := fmt.Sprintf(
 		rabbitmq.URLFORMAT,
-		conf.GetString(rabbitmq.RbtUsername),
-		conf.GetString(rabbitmq.RbtPassword),
-		conf.GetString(rabbitmq.RbtHost),
-		conf.GetString(rabbitmq.RbtPort),
+		common.GetString(conf, rabbitmq.RbtUsername, keys...),
+		common.GetString(conf, rabbitmq.RbtPassword, keys...),
+		common.GetString(conf, rabbitmq.RbtHost, keys...),
+		common.GetString(conf, rabbitmq.RbtPort, keys...),
 	)
 
-	vhost := conf.GetString(rabbitmq.RbtVHost)
-	targetExchange := conf.GetString(rabbitmq.RbtTargetExchange)
-	routingKey := conf.GetString(rabbitmq.RbtTargetRoutingKey)
-	rspQueue := conf.GetString(rabbitmq.RbtClientQueue)
+	vhost := common.GetString(conf, rabbitmq.RbtVHost, keys...)
+	targetExchange := common.GetString(conf, rabbitmq.RbtTargetExchange, keys...)
+	routingKey := common.GetString(conf, rabbitmq.RbtTargetRoutingKey, keys...)
+	rspQueue := common.GetString(conf, rabbitmq.RbtClientQueue, keys...)
 
 	// event
 	go func() {
@@ -71,7 +72,13 @@ func (ps *pubSub) Run(ctx context.Context, configID string, initconfig mq.Config
 			targetExchange, rspQueue, rspQueue, ps.rspChan, ps.subChan, ps.infoChan, ps.errChan)
 	}()
 
-	return nil
+	return map[string]string{
+		"url":            url,
+		"VHost":          vhost,
+		"TargetExchange": targetExchange,
+		"RoutingKey":     routingKey,
+		"RspQueue":       rspQueue,
+	}, nil
 }
 
 func (ps *pubSub) Send(ctx context.Context, responseChan chan<- mq.MqResponse, msg []mq.MqMessage) {

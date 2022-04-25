@@ -22,8 +22,10 @@ func main() {
 	errChan := make(chan error, 10)
 
 	pb := pubsub.New(infoChan, errChan)
-	if err := pb.Run(ctx, "config", InitConfig); err != nil {
+	if paras, err := pb.Run(ctx, InitConfig, "config", "MES-DEV"); err != nil {
 		log.Fatal(err)
+	} else {
+		log.Println(paras)
 	}
 
 	rsp := make(chan mq.MqResponse)
@@ -39,13 +41,13 @@ func main() {
 		msg,
 	})
 
-	go pb.Send(ctxQuery, rsp, []mq.MqMessage{
-		{
-			Msg:         []byte{},
-			CorraltedId: "",
-			IsEvent:     false,
-		},
-	})
+	// go pb.Send(ctxQuery, rsp, []mq.MqMessage{
+	// 	{
+	// 		Msg:         []byte{},
+	// 		CorraltedId: "",
+	// 		IsEvent:     false,
+	// 	},
+	// })
 
 	for {
 		select {
