@@ -24,7 +24,7 @@ func main() {
 
 	if m, err := tib.Run(ctx, InitConfig, ""); err != nil {
 		log.Fatal(err)
-	}else{
+	} else {
 		log.Println(m)
 	}
 

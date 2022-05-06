@@ -67,10 +67,10 @@ func main() {
 	})
 
 	re := <-rsp
-	log.Println(re)
+	log.Println("response", re)
 
 	if re.Err != nil {
-		log.Println(re.Err)
+		log.Println("Error", re.Err)
 	}
 
 	r.Send(ctx, rsp, []mq.MqMessage{
@@ -82,7 +82,7 @@ func main() {
 
 	re = <-rsp
 
-	log.Println(re)
+	log.Println("response", re)
 
 	if re.Err != nil {
 		log.Println(re.Err)

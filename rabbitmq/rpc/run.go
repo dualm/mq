@@ -62,6 +62,10 @@ func (r *rpc) Run(ctx context.Context, initConfig mq.ConfigFunc, configId string
 }
 
 func (r *rpc) Send(_ context.Context, responseChan chan<- mq.MqResponse, msg []mq.MqMessage) {
+	go r.send(context.TODO(), responseChan, msg)
+}
+
+func (r *rpc) send(_ context.Context, responseChan chan<- mq.MqResponse, msg []mq.MqMessage) {
 	for i := range msg {
 		if len(msg[i].Msg) == 0 {
 			if responseChan != nil {
@@ -76,6 +80,7 @@ func (r *rpc) Send(_ context.Context, responseChan chan<- mq.MqResponse, msg []m
 		responseChan <- <-r.response
 	}
 }
+
 
 func (r *rpc) Close(_ context.Context) {
 }

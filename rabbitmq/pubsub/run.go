@@ -82,6 +82,10 @@ func (ps *pubSub) Run(ctx context.Context, initConfig mq.ConfigFunc, configID st
 }
 
 func (ps *pubSub) Send(ctx context.Context, responseChan chan<- mq.MqResponse, msg []mq.MqMessage) {
+	go ps.send(ctx, responseChan, msg)
+}
+
+func (ps *pubSub) send(ctx context.Context, responseChan chan<- mq.MqResponse, msg []mq.MqMessage) {
 	for i := range msg {
 		if len(msg[i].Msg) == 0 {
 			if responseChan != nil {
@@ -92,7 +96,7 @@ func (ps *pubSub) Send(ctx context.Context, responseChan chan<- mq.MqResponse, m
 		}
 
 		if msg[i].IsEvent {
-			ps.send(msg[i])
+			ps.sendEvent(msg[i])
 
 			if responseChan != nil {
 				responseChan <- mq.MqResponse{}
@@ -103,7 +107,7 @@ func (ps *pubSub) Send(ctx context.Context, responseChan chan<- mq.MqResponse, m
 	}
 }
 
-func (ps *pubSub) send(msg mq.MqMessage) {
+func (ps *pubSub) sendEvent(msg mq.MqMessage) {
 	ps.eveChan <- msg
 }
 

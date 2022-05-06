@@ -37,17 +37,14 @@ func main() {
 	ctxQuery, cancalQuery := context.WithTimeout(ctx, 20*time.Second)
 	defer cancalQuery()
 
-	go pb.Send(ctxQuery, rsp, []mq.MqMessage{
+	pb.Send(ctxQuery, rsp, []mq.MqMessage{
 		msg,
+		NewMachineStateChangeEve("Z1TVIS02", "ZLFMM", 1),
 	})
 
-	// go pb.Send(ctxQuery, rsp, []mq.MqMessage{
-	// 	{
-	// 		Msg:         []byte{},
-	// 		CorraltedId: "",
-	// 		IsEvent:     false,
-	// 	},
-	// })
+	pb.Send(ctx, rsp, []mq.MqMessage{
+		NewMachineStateChangeEve("Z1TVIS02", "ZLFMM", 1),
+	})
 
 	for {
 		select {
@@ -56,17 +53,11 @@ func main() {
 		case <-ctxQuery.Done():
 			return
 		case info := <-infoChan:
-			log.Println(info)
+			log.Println("info", info)
 		case err := <-errChan:
-			log.Fatal(err)
+			log.Fatal("Error", err)
 		case re := <-rsp:
-			log.Println(string(re.Msg))
-			_, err := AreYouThereDecoder(re.Msg)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			return
+			log.Println("response", string(re.Msg))
 		}
 	}
 }
@@ -192,4 +183,46 @@ func MarshalByte(v interface{}) []byte {
 
 	return b
 
+}
+
+type machineStateChangedEve struct {
+	XMLName          xml.Name `xml:"Message"`
+	Header           Header   `xml:"Header"`
+	MachineName      string   `xml:"Body>MACHINENAME"`
+	MachineStateName string   `xml:"Body>MACHINESTATENAME"`
+	ReasonCode       string   `xml:"Body>REASONCODE"`
+}
+
+func (eve *machineStateChangedEve) MarshalByte() []byte {
+	return MarshalByte(eve)
+}
+
+func NewMachineStateChangeEve(machineName, factoryName string, state uint16) mq.MqMessage {
+	messageName := "MachineStateChanged"
+	header, _ := NewHeader(messageName, machineName, factoryName)
+	eve := machineStateChangedEve{
+		Header:      header,
+		MachineName: machineName,
+		MachineStateName: func(state uint16) string {
+			switch state {
+			case 0:
+				return "ETC"
+			case 4:
+				return "IDLE"
+			case 2:
+				return "RUN"
+			case 8, 10, 12:
+				return "DOWN"
+			default:
+				return ""
+			}
+		}(state),
+		ReasonCode: "",
+	}
+
+	return mq.MqMessage{
+		Msg:         eve.MarshalByte(),
+		CorraltedId: "",
+		IsEvent:     true,
+	}
 }

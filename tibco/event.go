@@ -8,4 +8,3 @@ import "C"
 type event struct {
 	tibrvEvent C.tibrvEvent
 }
-
