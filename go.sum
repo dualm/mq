@@ -49,10 +49,8 @@ github.com/cncf/udpa/go v0.0.0-20201120205902-5459f2c99403/go.mod h1:WmhPx2Nbnht
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/dualm/common v0.0.0-20220425030526-df7d6bb53ce2 h1:hDwAX4e+UaYB5fDZEzSzSbxj5ag6bhyRI1NXgbuDOn4=
-github.com/dualm/common v0.0.0-20220425030526-df7d6bb53ce2/go.mod h1:Droq0umEA01JAkJcqUrKVlLkwBXYvd4thpY7lmeO97I=
-github.com/dualm/ethernet-ip v0.1.1 h1:Dmgob0nYx/SgI3H3Ad8wdiMleq43ur/W9YckE0r9VeM=
-github.com/dualm/ethernet-ip v0.1.1/go.mod h1:wIA773p7j0Uc2gAT3vMIla/rzsQ4BDd+2hr1iVSiGq0=
+github.com/dualm/common v0.0.0-20220510085538-23db2ea44b76 h1:jhjPsfTsUdHBd9m0TcfFq6glEMD/gJfk+tIoRp/dmwA=
+github.com/dualm/common v0.0.0-20220510085538-23db2ea44b76/go.mod h1:bPoGmvoKCf3PQEuJHC1HV2Ne9TJ6M3bl/iJLMi5i1NU=
 github.com/dualm/zispc v0.0.9 h1:O82uL28sN+M2CCJlzfedA/AYzw5GgntbUF8/QHeP90U=
 github.com/dualm/zispc v0.0.9/go.mod h1:xcFDAYZhomrGw9ahjfMDBAqipIW2vSG3s2YpDj63law=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=

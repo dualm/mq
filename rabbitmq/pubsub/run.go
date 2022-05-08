@@ -30,7 +30,7 @@ type pubSub struct {
 	infoChan chan<- string
 }
 
-func (ps *pubSub) Run(ctx context.Context, initConfig mq.ConfigFunc, configID string, keys ...string) (map[string]string, error) {
+func (ps *pubSub) Run(ctx context.Context, initConfig mq.ConfigFunc, configID string, keys string) (map[string]string, error) {
 	conf, err := initConfig(configID)
 	if err != nil {
 		return nil, fmt.Errorf("rabbitmq/pubsub init config error, Error: %w", err)
@@ -42,16 +42,16 @@ func (ps *pubSub) Run(ctx context.Context, initConfig mq.ConfigFunc, configID st
 
 	url := fmt.Sprintf(
 		rabbitmq.URLFORMAT,
-		common.GetString(conf, rabbitmq.RbtUsername, keys...),
-		common.GetString(conf, rabbitmq.RbtPassword, keys...),
-		common.GetString(conf, rabbitmq.RbtHost, keys...),
-		common.GetString(conf, rabbitmq.RbtPort, keys...),
+		common.GetString(conf, keys, rabbitmq.RbtUsername),
+		common.GetString(conf, keys, rabbitmq.RbtPassword),
+		common.GetString(conf, keys, rabbitmq.RbtHost),
+		common.GetString(conf, keys, rabbitmq.RbtPort),
 	)
 
-	vhost := common.GetString(conf, rabbitmq.RbtVHost, keys...)
-	targetExchange := common.GetString(conf, rabbitmq.RbtTargetExchange, keys...)
-	routingKey := common.GetString(conf, rabbitmq.RbtTargetRoutingKey, keys...)
-	rspQueue := common.GetString(conf, rabbitmq.RbtClientQueue, keys...)
+	vhost := common.GetString(conf, keys, rabbitmq.RbtVHost)
+	targetExchange := common.GetString(conf, keys, rabbitmq.RbtTargetExchange)
+	routingKey := common.GetString(conf, keys, rabbitmq.RbtTargetRoutingKey)
+	rspQueue := common.GetString(conf, keys, rabbitmq.RbtClientQueue)
 
 	// event
 	go func() {

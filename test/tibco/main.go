@@ -22,7 +22,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
-	if m, err := tib.Run(ctx, InitConfig, ""); err != nil {
+	if m, err := tib.Run(ctx, InitConfig, "", ""); err != nil {
 		log.Fatal(err)
 	} else {
 		log.Println(m)

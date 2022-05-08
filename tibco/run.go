@@ -39,7 +39,7 @@ func New(infoChan chan<- string, errChan chan<- error) mq.Mq {
 }
 
 // Run implements mq.Mq
-func (t *tibcoMq) Run(ctx context.Context, initConfig mq.ConfigFunc, configID string, keys ...string) (map[string]string, error) {
+func (t *tibcoMq) Run(ctx context.Context, initConfig mq.ConfigFunc, configID string, keys string) (map[string]string, error) {
 	conf, err := initConfig(configID)
 	if err != nil {
 		return nil, fmt.Errorf("tibco init config error, Error: %w", err)
@@ -49,11 +49,11 @@ func (t *tibcoMq) Run(ctx context.Context, initConfig mq.ConfigFunc, configID st
 		return nil, fmt.Errorf("nil config")
 	}
 
-	t.service = common.GetString(conf, TibcoService, keys...)
-	t.network = common.GetString(conf, TibcoNetwork, keys...)
-	t.daemon = common.GetStringSlice(conf, TibcoDaemon, keys...)
-	t.fieldName = common.GetString(conf, TibcoFieldName, keys...)
-	t.targetSubjectName = common.GetString(conf, TibcoSubjectName, keys...)
+	t.service = common.GetString(conf, keys, TibcoService)
+	t.network = common.GetString(conf, keys, TibcoNetwork)
+	t.daemon = common.GetStringSlice(conf, keys, TibcoDaemon)
+	t.fieldName = common.GetString(conf, keys, TibcoFieldName)
+	t.targetSubjectName = common.GetString(conf, keys, TibcoSubjectName)
 
 	if err := t.init(t.service, t.network, t.daemon); err != nil {
 		return nil, fmt.Errorf("tibco init error, Error: %w", err)

@@ -26,7 +26,7 @@ type rpc struct {
 	errChan     chan<- error
 }
 
-func (r *rpc) Run(ctx context.Context, initConfig mq.ConfigFunc, configId string, keys ...string) (map[string]string, error) {
+func (r *rpc) Run(ctx context.Context, initConfig mq.ConfigFunc, configId string, keys string) (map[string]string, error) {
 	conf, err := initConfig(configId)
 	if err != nil {
 		return nil, fmt.Errorf("rabbitmq/rpc init config error, Error: %w", err)
@@ -38,15 +38,15 @@ func (r *rpc) Run(ctx context.Context, initConfig mq.ConfigFunc, configId string
 
 	url := fmt.Sprintf(
 		rabbitmq.URLFORMAT,
-		common.GetString(conf, rabbitmq.RbtUsername, keys...),
-		common.GetString(conf, rabbitmq.RbtPassword, keys...),
-		common.GetString(conf, rabbitmq.RbtHost, keys...),
-		common.GetString(conf, rabbitmq.RbtPort, keys...),
+		common.GetString(conf, keys, rabbitmq.RbtUsername),
+		common.GetString(conf, keys, rabbitmq.RbtPassword),
+		common.GetString(conf, keys, rabbitmq.RbtHost),
+		common.GetString(conf, keys, rabbitmq.RbtPort),
 	)
 
-	queue := common.GetString(conf, rabbitmq.RbtQueue, keys...)
-	vhost := common.GetString(conf, rabbitmq.RbtVHost, keys...)
-	clientQueue := common.GetString(conf, rabbitmq.RbtClientQueue, keys...)
+	queue := common.GetString(conf, keys, rabbitmq.RbtQueue)
+	vhost := common.GetString(conf, keys, rabbitmq.RbtVHost)
+	clientQueue := common.GetString(conf, keys, rabbitmq.RbtClientQueue)
 
 	go func() {
 		publish(ctx, redial(ctx, url, queue, vhost, r.infoChan, r.errChan),
@@ -80,7 +80,6 @@ func (r *rpc) send(_ context.Context, responseChan chan<- mq.MqResponse, msg []m
 		responseChan <- <-r.response
 	}
 }
-
 
 func (r *rpc) Close(_ context.Context) {
 }

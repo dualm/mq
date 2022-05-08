@@ -3,14 +3,13 @@ module github.com/dualm/mq
 go 1.18
 
 require (
-	github.com/dualm/common v0.0.0-20220425030526-df7d6bb53ce2
+	github.com/dualm/common v0.0.0-20220510085538-23db2ea44b76
 	github.com/dualm/zispc v0.0.9
 	github.com/rabbitmq/amqp091-go v1.3.4
 	github.com/spf13/viper v1.11.0
 )
 
 require (
-	github.com/dualm/ethernet-ip v0.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.3 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
