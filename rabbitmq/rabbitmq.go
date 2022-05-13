@@ -16,7 +16,7 @@ const (
 	RbtClientQueue      = "EapQueue"
 	RbtVHost            = "Vhost"
 
-	ChanBufferSize = 10
+	ChanBufferSize = 256
 )
 
 type Session struct {

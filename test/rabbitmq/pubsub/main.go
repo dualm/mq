@@ -28,38 +28,87 @@ func main() {
 		log.Println(paras)
 	}
 
-	rsp := make(chan mq.MqResponse)
+	go func() {
+		msg := NewAreYouThereReq("TestEQP_1", "ZLFMM")
 
-	msg := NewAreYouThereReq("TestEQP", "ZLFMM")
-
-	log.Println(string(msg.Msg))
-
-	ctxQuery, cancalQuery := context.WithTimeout(ctx, 20*time.Second)
-	defer cancalQuery()
-
-	pb.Send(ctxQuery, rsp, []mq.MqMessage{
-		msg,
-		NewMachineStateChangeEve("Z1TVIS02", "ZLFMM", 1),
-	})
-
-	pb.Send(ctx, rsp, []mq.MqMessage{
-		NewMachineStateChangeEve("Z1TVIS02", "ZLFMM", 1),
-	})
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ctxQuery.Done():
-			return
-		case info := <-infoChan:
-			log.Println("info", info)
-		case err := <-errChan:
-			log.Fatal("Error", err)
-		case re := <-rsp:
-			log.Println("response", string(re.Msg))
+		re, err := SendToMes(pb, msg)
+		if err != nil {
+			log.Println("Error", err)
 		}
-	}
+
+		log.Println(string(re))
+
+		msg = NewMachineStateChangeEve("TestEQP_1", "ZLFMM", 1)
+
+		re, err = SendToMes(pb, msg)
+		if err != nil {
+			log.Println("Error", err)
+		}
+
+		log.Println(string(re))
+	}()
+
+	go func() {
+		msg := NewAreYouThereReq("TestEQP_2", "ZLFMM")
+
+		re, err := SendToMes(pb, msg)
+		if err != nil {
+			log.Println("Error", err)
+		}
+
+		log.Println(string(re))
+
+		msg = NewMachineStateChangeEve("TestEQP_2", "ZLFMM", 1)
+
+		re, err = SendToMes(pb, msg)
+		if err != nil {
+			log.Println("Error", err)
+		}
+
+		log.Println(string(re))
+	}()
+
+	go func() {
+		msg := NewAreYouThereReq("TestEQP_3", "ZLFMM")
+
+		re, err := SendToMes(pb, msg)
+		if err != nil {
+			log.Println("Error", err)
+		}
+
+		log.Println(string(re))
+
+		msg = NewMachineStateChangeEve("TestEQP_3", "ZLFMM", 1)
+
+		re, err = SendToMes(pb, msg)
+		if err != nil {
+			log.Println("Error", err)
+		}
+
+		log.Println(string(re))
+	}()
+
+	go func() {
+		msg := NewAreYouThereReq("TestEQP_4", "ZLFMM")
+
+		re, err := SendToMes(pb, msg)
+		if err != nil {
+			log.Println("Error", err)
+		}
+
+		log.Println(string(re))
+
+		msg = NewMachineStateChangeEve("TestEQP_4", "ZLFMM", 1)
+
+		re, err = SendToMes(pb, msg)
+		if err != nil {
+			log.Println("Error", err)
+		}
+
+		log.Println(string(re))
+	}()
+
+	<-ctx.Done()
 }
 
 func InitConfig(configId string) (*viper.Viper, error) {
@@ -225,4 +274,37 @@ func NewMachineStateChangeEve(machineName, factoryName string, state uint16) mq.
 		CorraltedId: "",
 		IsEvent:     true,
 	}
+}
+
+func WaitRequest(ctx context.Context, rsp <-chan mq.MqResponse) ([]byte, error) {
+	select {
+	case <-ctx.Done():
+		return nil, fmt.Errorf("request timeout")
+	case r, ok := <-rsp:
+		if !ok {
+			return nil, fmt.Errorf("invalid response channel")
+		}
+		if r.Err != nil {
+			return nil, fmt.Errorf("request error, Error: %w", r.Err)
+		}
+
+		if len(r.Msg) != 0 {
+			log.Println("Get Response", string(r.Msg))
+		}
+
+		return r.Msg, nil
+	}
+}
+
+func SendToMes(m mq.Mq, msg mq.MqMessage) ([]byte, error) {
+	ctx, cancal := context.WithTimeout(context.Background(), time.Second*20)
+	defer cancal()
+
+	rsp := make(chan mq.MqResponse)
+
+	m.Send(ctx, rsp, []mq.MqMessage{msg})
+
+	log.Println("Send Mes Message", string(msg.Msg))
+
+	return WaitRequest(ctx, rsp)
 }
