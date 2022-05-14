@@ -61,16 +61,14 @@ func (r *rpc) Run(ctx context.Context, initConfig mq.ConfigFunc, configId string
 	}, nil
 }
 
-func (r *rpc) Send(_ context.Context, responseChan chan<- mq.MqResponse, msg []mq.MqMessage) {
-	go r.send(context.TODO(), responseChan, msg)
+func (r *rpc) Send(ctx context.Context, responseChan chan<- mq.MqResponse, msg []mq.MqMessage) {
+	go r.send(ctx, responseChan, msg)
 }
 
-func (r *rpc) send(_ context.Context, responseChan chan<- mq.MqResponse, msg []mq.MqMessage) {
+func (r *rpc) send(ctx context.Context, responseChan chan<- mq.MqResponse, msg []mq.MqMessage) {
 	for i := range msg {
 		if len(msg[i].Msg) == 0 {
-			if responseChan != nil {
-				responseChan <- mq.MqResponse{}
-			}
+			go rabbitmq.SendResponse(ctx, mq.MqResponse{}, responseChan, r.errChan)
 
 			continue
 		}

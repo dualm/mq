@@ -14,7 +14,7 @@ func New(infoChan chan<- string, errChan chan<- error) mq.Mq {
 	return &pubSub{
 		eveChan:  make(chan mq.MqMessage, rabbitmq.ChanBufferSize),
 		reqChan:  make(chan mq.MqMessage, rabbitmq.ChanBufferSize),
-		subChan:  make(chan struct{}, rabbitmq.ChanBufferSize),
+		subChan:  make(chan rabbitmq.Subscription, rabbitmq.ChanBufferSize),
 		rspChan:  make(chan amqp.Delivery, rabbitmq.ChanBufferSize),
 		errChan:  errChan,
 		infoChan: infoChan,
@@ -24,7 +24,7 @@ func New(infoChan chan<- string, errChan chan<- error) mq.Mq {
 type pubSub struct {
 	eveChan  chan mq.MqMessage
 	reqChan  chan mq.MqMessage
-	subChan  chan struct{}
+	subChan  chan rabbitmq.Subscription
 	rspChan  chan amqp.Delivery
 	errChan  chan<- error
 	infoChan chan<- string
@@ -88,9 +88,7 @@ func (ps *pubSub) Send(ctx context.Context, responseChan chan<- mq.MqResponse, m
 func (ps *pubSub) send(ctx context.Context, responseChan chan<- mq.MqResponse, msg []mq.MqMessage) {
 	for i := range msg {
 		if len(msg[i].Msg) == 0 {
-			if responseChan != nil {
-				responseChan <- mq.MqResponse{}
-			}
+			go rabbitmq.SendResponse(ctx, mq.MqResponse{}, responseChan, ps.errChan)
 
 			continue
 		}
@@ -98,9 +96,7 @@ func (ps *pubSub) send(ctx context.Context, responseChan chan<- mq.MqResponse, m
 		if msg[i].IsEvent {
 			ps.sendEvent(msg[i])
 
-			if responseChan != nil {
-				responseChan <- mq.MqResponse{}
-			}
+			go rabbitmq.SendResponse(ctx, mq.MqResponse{}, responseChan, ps.errChan)
 		} else {
 			go ps.sendRequest(ctx, msg[i], responseChan)
 		}
@@ -112,30 +108,11 @@ func (ps *pubSub) sendEvent(msg mq.MqMessage) {
 }
 
 func (ps *pubSub) sendRequest(ctx context.Context, msg mq.MqMessage, rsp chan<- mq.MqResponse) {
-	// 发送数据
-	ps.subChan <- struct{}{}
-	ps.reqChan <- msg
-
-	select {
-	case <-ctx.Done():
-		rsp <- mq.MqResponse{
-			Msg: nil,
-			Err: fmt.Errorf("rabbitmq/pubsub SendRequest timeout: %s", msg.CorraltedId),
-		}
-
-		return
-	case delivery := <-ps.rspChan:
-		if delivery.CorrelationId == msg.CorraltedId {
-			rsp <- mq.MqResponse{
-				Msg: delivery.Body,
-				Err: nil,
-			}
-
-			return
-		}
-
-		ps.rspChan <- delivery
+	ps.subChan <- rabbitmq.Subscription{
+		Name:    msg.CorraltedId,
+		RspChan: rsp,
 	}
+	ps.reqChan <- msg
 }
 
 func (ps *pubSub) Close(_ context.Context) {

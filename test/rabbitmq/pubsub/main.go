@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/dualm/mq"
@@ -31,81 +32,86 @@ func main() {
 	go func() {
 		msg := NewAreYouThereReq("TestEQP_1", "ZLFMM")
 
-		re, err := SendToMes(pb, msg)
+		_, err := SendToMes(pb, msg)
 		if err != nil {
 			log.Println("Error", err)
 		}
 
-		log.Println(string(re))
+		_, err = SendToMes(pb, NewAreYouThereReq("TestEQP_1", "ZLFMM"))
+		if err != nil {
+			log.Println("Error", err)
+		}
 
 		msg = NewMachineStateChangeEve("TestEQP_1", "ZLFMM", 1)
 
-		re, err = SendToMes(pb, msg)
+		_, err = SendToMes(pb, msg)
 		if err != nil {
 			log.Println("Error", err)
 		}
-
-		log.Println(string(re))
 	}()
 
 	go func() {
 		msg := NewAreYouThereReq("TestEQP_2", "ZLFMM")
 
-		re, err := SendToMes(pb, msg)
+		_, err := SendToMes(pb, msg)
 		if err != nil {
 			log.Println("Error", err)
 		}
 
-		log.Println(string(re))
+		_, err = SendToMes(pb, NewAreYouThereReq("TestEQP_2", "ZLFMM"))
+		if err != nil {
+			log.Println("Error", err)
+		}
 
 		msg = NewMachineStateChangeEve("TestEQP_2", "ZLFMM", 1)
 
-		re, err = SendToMes(pb, msg)
+		_, err = SendToMes(pb, msg)
 		if err != nil {
 			log.Println("Error", err)
 		}
-
-		log.Println(string(re))
 	}()
 
 	go func() {
 		msg := NewAreYouThereReq("TestEQP_3", "ZLFMM")
 
-		re, err := SendToMes(pb, msg)
+		_, err := SendToMes(pb, msg)
 		if err != nil {
 			log.Println("Error", err)
 		}
 
-		log.Println(string(re))
+		_, err = SendToMes(pb, NewAreYouThereReq("TestEQP_3", "ZLFMM"))
+		if err != nil {
+			log.Println("Error", err)
+		}
 
 		msg = NewMachineStateChangeEve("TestEQP_3", "ZLFMM", 1)
 
-		re, err = SendToMes(pb, msg)
+		_, err = SendToMes(pb, msg)
 		if err != nil {
 			log.Println("Error", err)
 		}
-
-		log.Println(string(re))
 	}()
 
 	go func() {
 		msg := NewAreYouThereReq("TestEQP_4", "ZLFMM")
 
-		re, err := SendToMes(pb, msg)
+		_, err := SendToMes(pb, msg)
 		if err != nil {
 			log.Println("Error", err)
 		}
 
-		log.Println(string(re))
+		_, err = SendToMes(pb, NewAreYouThereReq("TestEQP_4", "ZLFMM"))
+		if err != nil {
+			log.Println("Error", err)
+		}
 
 		msg = NewMachineStateChangeEve("TestEQP_4", "ZLFMM", 1)
 
-		re, err = SendToMes(pb, msg)
+		_, err = SendToMes(pb, msg)
 		if err != nil {
 			log.Println("Error", err)
 		}
 
-		log.Println(string(re))
 	}()
 
 	<-ctx.Done()
@@ -139,6 +145,9 @@ func (req *AreYouThereReq) MarshalByte() []byte {
 }
 
 func NewAreYouThereReq(machineName, factoryName string) mq.MqMessage {
+	lock.Lock()
+	defer lock.Unlock()
+
 	messageName := "AreYouThereRequest"
 	header, id := NewHeader(messageName, machineName, factoryName)
 	areYouThereReq := AreYouThereReq{
@@ -212,8 +221,10 @@ func NewHeader(messageName, machineName, factoryName string) (Header, string) {
 	}, machineName + "-" + id
 }
 
+var lock sync.Mutex
+
 func GetRandStr(l int) string {
-	r := rand.New(rand.NewSource(time.Now().UnixMicro()))
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	bytes := make([]byte, l)
 	for i := 0; i < l; i++ {
@@ -300,7 +311,7 @@ func SendToMes(m mq.Mq, msg mq.MqMessage) ([]byte, error) {
 	ctx, cancal := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancal()
 
-	rsp := make(chan mq.MqResponse)
+	rsp := make(chan mq.MqResponse, 1)
 
 	m.Send(ctx, rsp, []mq.MqMessage{msg})
 
