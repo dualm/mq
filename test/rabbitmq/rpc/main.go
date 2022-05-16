@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/dualm/mq"
 	"github.com/dualm/mq/rabbitmq/rpc"
@@ -57,36 +59,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	rsp := make(chan mq.MqResponse, 1)
-
-	r.Send(ctx, rsp, []mq.MqMessage{
-		{
-			Msg:     dvMsg,
-			IsEvent: true,
-		},
-	})
-
-	re := <-rsp
-	log.Println("response", re)
-
-	if re.Err != nil {
-		log.Println("Error", re.Err)
+	b, err := SendToSpc(r, mq.MqMessage{Msg: dvMsg, IsEvent: true})
+	if err != nil {
+		log.Println("Error", err)
 	}
 
-	r.Send(ctx, rsp, []mq.MqMessage{
-		{
-			Msg:     nil,
-			IsEvent: true,
-		},
-	})
-
-	re = <-rsp
-
-	log.Println("response", re)
-
-	if re.Err != nil {
-		log.Println(re.Err)
-	}
+	log.Println("response", string(b))
 }
 
 func InitConfig(configId string) (*viper.Viper, error) {
@@ -104,66 +82,39 @@ func InitConfig(configId string) (*viper.Viper, error) {
 	return conf, nil
 }
 
-/*
-<Message>
-    <Header>
-        <MESSAGENAME>DataCollectRequest</MESSAGENAME>
-        <EVENTCOMMENT>DataCollectRequest</EVENTCOMMENT>
-        <EVENTUSER>DataCollectRequest</EVENTUSER>
-        <ORIGINALSOURCESUBJECTNAME>amq.rabbitmq.reply-to.g1h2AA5yZXBseUAyNzIyNTAxMAAAaQcAAACjYbwn+w==.Ah/RUZx2xeNcHnvcyAQG9A==, AMQPCorrelationID[30]</ORIGINALSOURCESUBJECTNAME>
-    </Header>
-    <Body>
-        <FACTORYNAME>ZLFMM</FACTORYNAME>
-        <PRODUCTSPECNAME>TEST-P</PRODUCTSPECNAME>
-        <PROCESSFLOWNAME>TEST-F</PROCESSFLOWNAME>
-        <PROCESSOPERATIONNAME>TEST-O</PROCESSOPERATIONNAME>
-        <MACHINENAME>TEST-M</MACHINENAME>
-        <MACHINERECIPENAME>-</MACHINERECIPENAME>
-        <UNITNAME>-</UNITNAME>
-        <LOTNAME>W1</LOTNAME>
-        <PRODUCTNAME>W1</PRODUCTNAME>
-        <ITEMLIST>
-            <ITEM>
-                <ITEMNAME>para</ITEMNAME>
-                <SITELIST>
-                    <SITE>
-                        <SITENAME>001</SITENAME>
-                        <SITEVALUE>8</SITEVALUE>
-                        <SAMPLEMATERIALNAME>W1</SAMPLEMATERIALNAME>
-                    </SITE>
-                    <SITE>
-                        <SITENAME>002</SITENAME>
-                        <SITEVALUE>8</SITEVALUE>
-                        <SAMPLEMATERIALNAME>W1</SAMPLEMATERIALNAME>
-                    </SITE>
-                    <SITE>
-                        <SITENAME>003</SITENAME>
-                        <SITEVALUE>8</SITEVALUE>
-                        <SAMPLEMATERIALNAME>W1</SAMPLEMATERIALNAME>
-                    </SITE>
-                </SITELIST>
-            </ITEM>
-            <ITEM>
-                <ITEMNAME>HYJ</ITEMNAME>
-                <SITELIST>
-                    <SITE>
-                        <SITENAME>001</SITENAME>
-                        <SITEVALUE>12</SITEVALUE>
-                        <SAMPLEMATERIALNAME>W1</SAMPLEMATERIALNAME>
-                    </SITE>
-                    <SITE>
-                        <SITENAME>002</SITENAME>
-                        <SITEVALUE>12</SITEVALUE>
-                        <SAMPLEMATERIALNAME>W1</SAMPLEMATERIALNAME>
-                    </SITE>
-                    <SITE>
-                        <SITENAME>003</SITENAME>
-                        <SITEVALUE>12</SITEVALUE>
-                        <SAMPLEMATERIALNAME>W1</SAMPLEMATERIALNAME>
-                    </SITE>
-                </SITELIST>
-            </ITEM>
-        </ITEMLIST>
-    </Body>
-</Message>
-*/
+func SendToSpc(m mq.Mq, msg mq.MqMessage) ([]byte, error) {
+	ctxSend, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	defer cancel()
+
+	rsp := make(chan mq.MqResponse, 1)
+
+	select {
+	case <-ctxSend.Done():
+		return nil, fmt.Errorf("send to SPC time out, Error: %w", ctxSend.Err())
+	case <-m.Send(ctxSend, rsp, []mq.MqMessage{msg}):
+		ctxRecv, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		defer cancel()
+
+		return WaitRequest(ctxRecv, rsp)
+	}
+}
+
+func WaitRequest(ctx context.Context, rsp <-chan mq.MqResponse) ([]byte, error) {
+	select {
+	case <-ctx.Done():
+		return nil, fmt.Errorf("request timeout, Error: %w", ctx.Err())
+	case r, ok := <-rsp:
+		if !ok {
+			return nil, fmt.Errorf("invalid response channel")
+		}
+		if r.Err != nil {
+			return nil, fmt.Errorf("request error, Error: %w", r.Err)
+		}
+
+		if len(r.Msg) != 0 {
+			log.Println("Get Response", string(r.Msg))
+		}
+
+		return r.Msg, nil
+	}
+}

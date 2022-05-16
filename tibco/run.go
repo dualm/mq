@@ -68,7 +68,7 @@ func (t *tibcoMq) Run(ctx context.Context, initConfig mq.ConfigFunc, configID st
 	}, nil
 }
 
-func (t *tibcoMq) Send(ctx context.Context, responseChan chan<- mq.MqResponse, msg []mq.MqMessage) {
+func (t *tibcoMq) Send(ctx context.Context, responseChan chan<- mq.MqResponse, msg []mq.MqMessage) <-chan struct{} {
 	for _, m := range msg {
 		if m.Msg == nil {
 			if responseChan != nil {
@@ -86,7 +86,7 @@ func (t *tibcoMq) Send(ctx context.Context, responseChan chan<- mq.MqResponse, m
 				Err: fmt.Errorf("make tibco message error, %w", err),
 			}
 
-			return
+			return nil
 		}
 
 		if m.IsEvent {
@@ -112,6 +112,8 @@ func (t *tibcoMq) Send(ctx context.Context, responseChan chan<- mq.MqResponse, m
 			}
 		}
 	}
+
+	return nil
 }
 
 func (t *tibcoMq) Close(ctx context.Context) {

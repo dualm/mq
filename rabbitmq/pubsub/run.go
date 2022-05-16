@@ -12,7 +12,6 @@ import (
 
 func New(infoChan chan<- string, errChan chan<- error) mq.Mq {
 	return &pubSub{
-		eveChan:  make(chan mq.MqMessage, rabbitmq.ChanBufferSize),
 		reqChan:  make(chan mq.MqMessage, rabbitmq.ChanBufferSize),
 		subChan:  make(chan rabbitmq.Subscription, rabbitmq.ChanBufferSize),
 		rspChan:  make(chan amqp.Delivery, rabbitmq.ChanBufferSize),
@@ -22,7 +21,6 @@ func New(infoChan chan<- string, errChan chan<- error) mq.Mq {
 }
 
 type pubSub struct {
-	eveChan  chan mq.MqMessage
 	reqChan  chan mq.MqMessage
 	subChan  chan rabbitmq.Subscription
 	rspChan  chan amqp.Delivery
@@ -53,13 +51,6 @@ func (ps *pubSub) Run(ctx context.Context, initConfig mq.ConfigFunc, configID st
 	routingKey := common.GetString(conf, keys, rabbitmq.RbtTargetRoutingKey)
 	rspQueue := common.GetString(conf, keys, rabbitmq.RbtClientQueue)
 
-	// event
-	go func() {
-		publish(
-			ctx, redial(ctx, url, targetExchange, vhost, ps.infoChan, ps.errChan),
-			targetExchange, routingKey, rspQueue, ps.eveChan, ps.infoChan, ps.errChan)
-	}()
-
 	go func() {
 		publish(
 			ctx, redial(ctx, url, targetExchange, vhost, ps.infoChan, ps.errChan),
@@ -81,14 +72,21 @@ func (ps *pubSub) Run(ctx context.Context, initConfig mq.ConfigFunc, configID st
 	}, nil
 }
 
-func (ps *pubSub) Send(ctx context.Context, responseChan chan<- mq.MqResponse, msg []mq.MqMessage) {
-	go ps.send(ctx, responseChan, msg)
+func (ps *pubSub) Send(ctx context.Context, responseChan chan<- mq.MqResponse, msg []mq.MqMessage) <-chan struct{} {
+	c := make(chan struct{})
+
+	go func() {
+		ps.send(ctx, responseChan, msg)
+		c <- struct{}{}
+	}()
+
+	return c
 }
 
 func (ps *pubSub) send(ctx context.Context, responseChan chan<- mq.MqResponse, msg []mq.MqMessage) {
 	for i := range msg {
 		if len(msg[i].Msg) == 0 {
-			go rabbitmq.SendResponse(ctx, mq.MqResponse{}, responseChan, ps.errChan)
+			rabbitmq.SendResponse(mq.MqResponse{}, responseChan, ps.errChan)
 
 			continue
 		}
@@ -96,23 +94,29 @@ func (ps *pubSub) send(ctx context.Context, responseChan chan<- mq.MqResponse, m
 		if msg[i].IsEvent {
 			ps.sendEvent(msg[i])
 
-			go rabbitmq.SendResponse(ctx, mq.MqResponse{}, responseChan, ps.errChan)
+			rabbitmq.SendResponse(mq.MqResponse{}, responseChan, ps.errChan)
 		} else {
-			go ps.sendRequest(ctx, msg[i], responseChan)
+			ps.sendRequest(ctx, msg[i], responseChan)
 		}
 	}
 }
 
 func (ps *pubSub) sendEvent(msg mq.MqMessage) {
-	ps.eveChan <- msg
+	ps.reqChan <- msg
 }
 
 func (ps *pubSub) sendRequest(ctx context.Context, msg mq.MqMessage, rsp chan<- mq.MqResponse) {
-	ps.subChan <- rabbitmq.Subscription{
-		Name:    msg.CorraltedId,
-		RspChan: rsp,
+	select {
+	case <-ctx.Done():
+		ps.errChan <- fmt.Errorf("send subscription error, Error: %w", ctx.Err())
+	case ps.subChan <- rabbitmq.Subscription{Name: msg.CorraltedId, RspChan: rsp}:
+		select {
+		case <-ctx.Done():
+			ps.errChan <- fmt.Errorf("send request error, Error: %w", ctx.Err())
+		case ps.reqChan <- msg:
+			return
+		}
 	}
-	ps.reqChan <- msg
 }
 
 func (ps *pubSub) Close(_ context.Context) {

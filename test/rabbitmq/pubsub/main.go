@@ -37,10 +37,10 @@ func main() {
 			log.Println("Error", err)
 		}
 
-		_, err = SendToMes(pb, NewAreYouThereReq("TestEQP_1", "ZLFMM"))
-		if err != nil {
-			log.Println("Error", err)
-		}
+		// _, err = SendToMes(pb, NewAreYouThereReq("TestEQP_1", "ZLFMM"))
+		// if err != nil {
+		// 	log.Println("Error", err)
+		// }
 
 		msg = NewMachineStateChangeEve("TestEQP_1", "ZLFMM", 1)
 
@@ -50,70 +50,196 @@ func main() {
 		}
 	}()
 
-	go func() {
-		msg := NewAreYouThereReq("TestEQP_2", "ZLFMM")
+	// go func() {
+	// 	msg := NewAreYouThereReq("TestEQP_2", "ZLFMM")
 
-		_, err := SendToMes(pb, msg)
-		if err != nil {
-			log.Println("Error", err)
-		}
+	// 	_, err := SendToMes(pb, msg)
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
 
-		_, err = SendToMes(pb, NewAreYouThereReq("TestEQP_2", "ZLFMM"))
-		if err != nil {
-			log.Println("Error", err)
-		}
+	// 	_, err = SendToMes(pb, NewAreYouThereReq("TestEQP_2", "ZLFMM"))
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
 
-		msg = NewMachineStateChangeEve("TestEQP_2", "ZLFMM", 1)
+	// 	msg = NewMachineStateChangeEve("TestEQP_2", "ZLFMM", 1)
 
-		_, err = SendToMes(pb, msg)
-		if err != nil {
-			log.Println("Error", err)
-		}
-	}()
+	// 	_, err = SendToMes(pb, msg)
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
+	// }()
 
-	go func() {
-		msg := NewAreYouThereReq("TestEQP_3", "ZLFMM")
+	// go func() {
+	// 	msg := NewAreYouThereReq("TestEQP_3", "ZLFMM")
 
-		_, err := SendToMes(pb, msg)
-		if err != nil {
-			log.Println("Error", err)
-		}
+	// 	_, err := SendToMes(pb, msg)
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
 
-		_, err = SendToMes(pb, NewAreYouThereReq("TestEQP_3", "ZLFMM"))
-		if err != nil {
-			log.Println("Error", err)
-		}
+	// 	_, err = SendToMes(pb, NewAreYouThereReq("TestEQP_3", "ZLFMM"))
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
 
-		msg = NewMachineStateChangeEve("TestEQP_3", "ZLFMM", 1)
+	// 	msg = NewMachineStateChangeEve("TestEQP_3", "ZLFMM", 1)
 
-		_, err = SendToMes(pb, msg)
-		if err != nil {
-			log.Println("Error", err)
-		}
-	}()
+	// 	_, err = SendToMes(pb, msg)
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
+	// }()
 
-	go func() {
-		msg := NewAreYouThereReq("TestEQP_4", "ZLFMM")
+	// go func() {
+	// 	msg := NewAreYouThereReq("TestEQP_4", "ZLFMM")
 
-		_, err := SendToMes(pb, msg)
-		if err != nil {
-			log.Println("Error", err)
-		}
+	// 	_, err := SendToMes(pb, msg)
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
 
-		_, err = SendToMes(pb, NewAreYouThereReq("TestEQP_4", "ZLFMM"))
-		if err != nil {
-			log.Println("Error", err)
-		}
+	// 	_, err = SendToMes(pb, NewAreYouThereReq("TestEQP_4", "ZLFMM"))
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
 
-		msg = NewMachineStateChangeEve("TestEQP_4", "ZLFMM", 1)
+	// 	msg = NewMachineStateChangeEve("TestEQP_4", "ZLFMM", 1)
 
-		_, err = SendToMes(pb, msg)
-		if err != nil {
-			log.Println("Error", err)
-		}
+	// 	_, err = SendToMes(pb, msg)
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
 
-	}()
+	// }()
 
+	// go func() {
+	// 	msg := NewAreYouThereReq("TestEQP_5", "ZLFMM")
+
+	// 	_, err := SendToMes(pb, msg)
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
+
+	// 	_, err = SendToMes(pb, NewAreYouThereReq("TestEQP_5", "ZLFMM"))
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
+
+	// 	msg = NewMachineStateChangeEve("TestEQP_5", "ZLFMM", 1)
+
+	// 	_, err = SendToMes(pb, msg)
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
+
+	// }()
+	// go func() {
+	// 	msg := NewAreYouThereReq("TestEQP_6", "ZLFMM")
+
+	// 	_, err := SendToMes(pb, msg)
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
+
+	// 	_, err = SendToMes(pb, NewAreYouThereReq("TestEQP_6", "ZLFMM"))
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
+
+	// 	msg = NewMachineStateChangeEve("TestEQP_6", "ZLFMM", 1)
+
+	// 	_, err = SendToMes(pb, msg)
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
+
+	// }()
+	// go func() {
+	// 	msg := NewAreYouThereReq("TestEQP_7", "ZLFMM")
+
+	// 	_, err := SendToMes(pb, msg)
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
+
+	// 	_, err = SendToMes(pb, NewAreYouThereReq("TestEQP_7", "ZLFMM"))
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
+
+	// 	msg = NewMachineStateChangeEve("TestEQP_7", "ZLFMM", 1)
+
+	// 	_, err = SendToMes(pb, msg)
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
+
+	// }()
+	// go func() {
+	// 	msg := NewAreYouThereReq("TestEQP_8", "ZLFMM")
+
+	// 	_, err := SendToMes(pb, msg)
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
+
+	// 	_, err = SendToMes(pb, NewAreYouThereReq("TestEQP_8", "ZLFMM"))
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
+
+	// 	msg = NewMachineStateChangeEve("TestEQP_8", "ZLFMM", 1)
+
+	// 	_, err = SendToMes(pb, msg)
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
+
+	// }()
+	// go func() {
+	// 	msg := NewAreYouThereReq("TestEQP_9", "ZLFMM")
+
+	// 	_, err := SendToMes(pb, msg)
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
+
+	// 	_, err = SendToMes(pb, NewAreYouThereReq("TestEQP_9", "ZLFMM"))
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
+
+	// 	msg = NewMachineStateChangeEve("TestEQP_9", "ZLFMM", 1)
+
+	// 	_, err = SendToMes(pb, msg)
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
+
+	// }()
+	// go func() {
+	// 	msg := NewAreYouThereReq("TestEQP_10", "ZLFMM")
+
+	// 	_, err := SendToMes(pb, msg)
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
+
+	// 	_, err = SendToMes(pb, NewAreYouThereReq("TestEQP_10", "ZLFMM"))
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
+
+	// 	msg = NewMachineStateChangeEve("TestEQP_10", "ZLFMM", 1)
+
+	// 	_, err = SendToMes(pb, msg)
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
+
+	// }()
 	<-ctx.Done()
 }
 
@@ -160,29 +286,6 @@ func NewAreYouThereReq(machineName, factoryName string) mq.MqMessage {
 		CorraltedId: id,
 		IsEvent:     false,
 	}
-}
-
-func AreYouThereDecoder(b []byte) (*AreYouThereReq, error) {
-	if b == nil {
-		return nil, fmt.Errorf("nil message")
-	}
-	rsp := new(AreYouThereReq)
-
-	err := xml.Unmarshal(b, rsp)
-	if err != nil {
-		return nil, err
-	}
-
-	if rsp.ReturnCode != "0" {
-		return nil,
-			fmt.Errorf("EQP: %s, ReturnCode: %s, ReturnMessage: %s",
-				rsp.MachineName,
-				rsp.ReturnCode,
-				rsp.ReturnMessage,
-			)
-	}
-
-	return rsp, nil
 }
 
 func GetTransactionId() string {
@@ -290,7 +393,7 @@ func NewMachineStateChangeEve(machineName, factoryName string, state uint16) mq.
 func WaitRequest(ctx context.Context, rsp <-chan mq.MqResponse) ([]byte, error) {
 	select {
 	case <-ctx.Done():
-		return nil, fmt.Errorf("request timeout")
+		return nil, fmt.Errorf("request timeout, Error: %w", ctx.Err())
 	case r, ok := <-rsp:
 		if !ok {
 			return nil, fmt.Errorf("invalid response channel")
@@ -300,7 +403,7 @@ func WaitRequest(ctx context.Context, rsp <-chan mq.MqResponse) ([]byte, error) 
 		}
 
 		if len(r.Msg) != 0 {
-			log.Println("Get Response", string(r.Msg))
+			log.Println("Get Response")
 		}
 
 		return r.Msg, nil
@@ -308,14 +411,20 @@ func WaitRequest(ctx context.Context, rsp <-chan mq.MqResponse) ([]byte, error) 
 }
 
 func SendToMes(m mq.Mq, msg mq.MqMessage) ([]byte, error) {
-	ctx, cancal := context.WithTimeout(context.Background(), time.Second*20)
+	ctxSend, cancal := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancal()
 
 	rsp := make(chan mq.MqResponse, 1)
 
-	m.Send(ctx, rsp, []mq.MqMessage{msg})
+	select {
+	case <-ctxSend.Done():
+		return nil, fmt.Errorf("send to MES time out, Error: %w", ctxSend.Err())
+	case <-m.Send(ctxSend, rsp, []mq.MqMessage{msg}):
+		// log.Println("Send Mes Message", string(msg.Msg))
 
-	log.Println("Send Mes Message", string(msg.Msg))
+		ctxRecv, cancal := context.WithTimeout(context.Background(), time.Second*20)
+		defer cancal()
 
-	return WaitRequest(ctx, rsp)
+		return WaitRequest(ctxRecv, rsp)
+	}
 }

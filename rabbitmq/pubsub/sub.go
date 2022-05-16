@@ -51,7 +51,7 @@ func subscribe(ctx context.Context, sessions chan chan rabbitmq.Session,
 
 					delete(_m, msg.CorrelationId)
 
-					go rabbitmq.SendResponse(ctx, mq.MqResponse{
+					go rabbitmq.SendResponse(mq.MqResponse{
 						Msg: msg.Body,
 						Err: nil,
 					}, _rspChan, errChan)

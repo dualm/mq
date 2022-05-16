@@ -21,7 +21,7 @@ const (
 	RbtClientQueue      = "EapQueue"
 	RbtVHost            = "Vhost"
 
-	ChanBufferSize = 256
+	ChanBufferSize = 0
 )
 
 type Session struct {
@@ -42,13 +42,17 @@ func (s *Session) Close() error {
 	return s.Connection.Close()
 }
 
-func SendResponse(ctx context.Context, rsp mq.MqResponse, rspChan chan<- mq.MqResponse, errChan chan<- error) {
-	subCtx, cancel := context.WithTimeout(ctx, time.Second*60)
+func SendResponse(rsp mq.MqResponse, rspChan chan<- mq.MqResponse, errChan chan<- error) {
+	subCtx, cancel := context.WithTimeout(context.Background(), time.Second*60)
 	defer cancel()
 
 	select {
 	case <-subCtx.Done():
-		errChan <- fmt.Errorf("send response time out")
+		if err := subCtx.Err(); err == context.Canceled {
+			errChan <- fmt.Errorf("send response canceled")
+		} else if err == context.DeadlineExceeded {
+			errChan <- fmt.Errorf("send response time out")
+		}
 	case rspChan <- rsp:
 		return
 	}
