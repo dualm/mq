@@ -8,7 +8,7 @@ import (
 
 type MqMessage struct {
 	Msg         []byte
-	CorraltedId string
+	CorrelationID string
 	IsEvent     bool
 }
 

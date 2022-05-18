@@ -49,7 +49,7 @@ func publish(ctx context.Context, sessions chan chan rabbitmq.Session, exchange,
 			case body = <-pending:
 				err := pub.Channel.Publish(exchange, routingKey, false, false, amqp.Publishing{
 					Body:          body.Msg,
-					CorrelationId: body.CorraltedId,
+					CorrelationId: body.CorrelationID,
 					ReplyTo: func() string {
 						if body.IsEvent {
 							return ""
