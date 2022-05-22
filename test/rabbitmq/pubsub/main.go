@@ -282,9 +282,9 @@ func NewAreYouThereReq(machineName, factoryName string) mq.MqMessage {
 	}
 
 	return mq.MqMessage{
-		Msg:         areYouThereReq.MarshalByte(),
+		Msg:           areYouThereReq.MarshalByte(),
 		CorrelationID: id,
-		IsEvent:     false,
+		IsEvent:       false,
 	}
 }
 
@@ -384,9 +384,9 @@ func NewMachineStateChangeEve(machineName, factoryName string, state uint16) mq.
 	}
 
 	return mq.MqMessage{
-		Msg:         eve.MarshalByte(),
+		Msg:           eve.MarshalByte(),
 		CorrelationID: "",
-		IsEvent:     true,
+		IsEvent:       true,
 	}
 }
 

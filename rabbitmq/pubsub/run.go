@@ -109,7 +109,7 @@ func (ps *pubSub) sendRequest(ctx context.Context, msg mq.MqMessage, rsp chan<- 
 	select {
 	case <-ctx.Done():
 		ps.errChan <- fmt.Errorf("send subscription error, Error: %w", ctx.Err())
-	case ps.subChan <- rabbitmq.Subscription{Name: msg.CorrelationID, RspChan: rsp}:
+	case ps.subChan <- rabbitmq.Subscription{CorrelationID: msg.CorrelationID, RspChan: rsp}:
 		select {
 		case <-ctx.Done():
 			ps.errChan <- fmt.Errorf("send request error, Error: %w", ctx.Err())

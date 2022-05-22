@@ -3,16 +3,19 @@ package pubsub
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/dualm/mq"
 	"github.com/dualm/mq/rabbitmq"
+	"github.com/patrickmn/go-cache"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 func subscribe(ctx context.Context, sessions chan chan rabbitmq.Session,
 	_, queue, consumer string, message chan<- amqp.Delivery, subChan <-chan rabbitmq.Subscription,
 	_ chan<- string, errChan chan<- error) {
-	_m := make(map[string]chan<- mq.MqResponse)
+	_cache := cache.New(time.Minute, time.Hour)
+
 	for session := range sessions {
 		sub := <-session
 
@@ -29,35 +32,31 @@ func subscribe(ctx context.Context, sessions chan chan rabbitmq.Session,
 			return
 		}
 
-		for newSub := range subChan {
-			_m[newSub.Name] = newSub.RspChan
-		LOOP:
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case msg := <-deliveries:
-					// 发送消息接收确认异常不能影响消息处理
-					if err := sub.Channel.Ack(msg.DeliveryTag, false); err != nil {
-						errChan <- fmt.Errorf("ack message error, Error: %w", err)
-					}
-
-					_rspChan, ok := _m[msg.CorrelationId]
-					if !ok {
-						errChan <- fmt.Errorf("receive a unexpected message, Message: %s", string(msg.Body))
-
-						continue
-					}
-
-					delete(_m, msg.CorrelationId)
-
-					go rabbitmq.SendResponse(mq.MqResponse{
-						Msg: msg.Body,
-						Err: nil,
-					}, _rspChan, errChan)
-
-					break LOOP
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case msg := <-deliveries:
+				// 发送消息接收确认异常不能影响消息处理
+				if err := sub.Channel.Ack(msg.DeliveryTag, false); err != nil {
+					errChan <- fmt.Errorf("ack message error, Error: %w", err)
 				}
+
+				_rspChan, found := _cache.Get(msg.CorrelationId)
+				if !found {
+					errChan <- fmt.Errorf("receive a unexpected message, Message: %s", string(msg.Body))
+
+					continue
+				}
+
+				_cache.Delete(msg.CorrelationId)
+
+				go rabbitmq.SendResponse(mq.MqResponse{
+					Msg: msg.Body,
+					Err: nil,
+				}, _rspChan.(chan<- mq.MqResponse), errChan)
+			case newSub := <-subChan:
+				_cache.Set(newSub.CorrelationID, newSub.RspChan, cache.DefaultExpiration)
 			}
 		}
 	}

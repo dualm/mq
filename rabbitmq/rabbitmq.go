@@ -30,8 +30,8 @@ type Session struct {
 }
 
 type Subscription struct {
-	Name    string
-	RspChan chan<- mq.MqResponse
+	CorrelationID string
+	RspChan       chan<- mq.MqResponse
 }
 
 func (s *Session) Close() error {

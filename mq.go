@@ -7,9 +7,9 @@ import (
 )
 
 type MqMessage struct {
-	Msg         []byte
+	Msg           []byte
 	CorrelationID string
-	IsEvent     bool
+	IsEvent       bool
 }
 
 type MqResponse struct {

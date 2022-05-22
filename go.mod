@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/dualm/common v0.0.0-20220510085538-23db2ea44b76
 	github.com/dualm/zispc v0.0.9
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/rabbitmq/amqp091-go v1.3.4
 	github.com/spf13/viper v1.11.0
 )
