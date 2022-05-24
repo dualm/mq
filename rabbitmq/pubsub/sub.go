@@ -13,7 +13,7 @@ import (
 
 func subscribe(ctx context.Context, sessions chan chan rabbitmq.Session,
 	_, queue, consumer string, message chan<- amqp.Delivery, subChan <-chan rabbitmq.Subscription,
-	_ chan<- string, errChan chan<- error) {
+	infoChan chan<- string, errChan chan<- error) {
 	_cache := cache.New(time.Minute, time.Hour)
 
 	for session := range sessions {
@@ -32,14 +32,22 @@ func subscribe(ctx context.Context, sessions chan chan rabbitmq.Session,
 			return
 		}
 
+	LOOP:
 		for {
 			select {
 			case <-ctx.Done():
 				return
-			case msg := <-deliveries:
-				// 发送消息接收确认异常不能影响消息处理
+			case msg, ok := <-deliveries:
+				if !ok {
+					infoChan <- "session closed"
+
+					break LOOP
+				}
+
 				if err := sub.Channel.Ack(msg.DeliveryTag, false); err != nil {
-					errChan <- fmt.Errorf("ack message error, Error: %w", err)
+					errChan <- fmt.Errorf("ack message error, quit session, Error: %w", err)
+
+					break LOOP
 				}
 
 				_rspChan, found := _cache.Get(msg.CorrelationId)
