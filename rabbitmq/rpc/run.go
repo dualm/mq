@@ -81,8 +81,18 @@ func (r *rpc) send(ctx context.Context, responseChan chan<- mq.MqResponse, msg [
 		}
 
 		m := msg[i]
-		r.requestChan <- m
-		responseChan <- <-r.response
+
+		select {
+		case <-ctx.Done():
+			return
+		case r.requestChan <- m:
+			select {
+			case <-ctx.Done():
+				return
+			case responseChan <- <-r.response:
+				continue
+			}
+		}
 	}
 }
 
