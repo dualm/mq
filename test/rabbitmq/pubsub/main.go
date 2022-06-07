@@ -23,32 +23,32 @@ func main() {
 	errChan := make(chan error, 10)
 
 	pb := pubsub.New(infoChan, errChan)
-	if paras, err := pb.Run(ctx, InitConfig, "config", "MES-DEV"); err != nil {
+	if paras, err := pb.Run(ctx, InitConfig, "config", "MES-PRD"); err != nil {
 		log.Fatal(err)
 	} else {
 		log.Println(paras)
 	}
 
-	go func() {
-		msg := NewAreYouThereReq("TestEQP_1", "ZLFMM")
+	// go func() {
+	// 	msg := NewAreYouThereReq("TestEQP_1", "ZLFMM")
 
-		_, err := SendToMes(pb, msg)
-		if err != nil {
-			log.Println("Error", err)
-		}
+	// 	_, err := SendToMes(pb, msg)
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
 
 		// _, err = SendToMes(pb, NewAreYouThereReq("TestEQP_1", "ZLFMM"))
 		// if err != nil {
 		// 	log.Println("Error", err)
 		// }
 
-		msg = NewMachineStateChangeEve("TestEQP_1", "ZLFMM", 1)
+	// 	msg = NewMachineStateChangeEve("TestEQP_1", "ZLFMM", 1)
 
-		_, err = SendToMes(pb, msg)
-		if err != nil {
-			log.Println("Error", err)
-		}
-	}()
+	// 	_, err = SendToMes(pb, msg)
+	// 	if err != nil {
+	// 		log.Println("Error", err)
+	// 	}
+	// }()
 
 	// go func() {
 	// 	msg := NewAreYouThereReq("TestEQP_2", "ZLFMM")
@@ -240,6 +240,18 @@ func main() {
 	// 	}
 
 	// }()
+
+	infoReq := NewPieceInfoDownloadReq("OFFLINEFILE", "ZLFMM", "ABAB012B5V030S012P1", "")
+
+	re, err := SendToMes(pb, infoReq)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println(string(re))
+
+	log.Println(PieceInfoDownloadDecode(re))
+
 	<-ctx.Done()
 }
 
@@ -420,11 +432,88 @@ func SendToMes(m mq.Mq, msg mq.MqMessage) ([]byte, error) {
 	case <-ctxSend.Done():
 		return nil, fmt.Errorf("send to MES time out, Error: %w", ctxSend.Err())
 	case <-m.Send(ctxSend, rsp, []mq.MqMessage{msg}):
-		// log.Println("Send Mes Message", string(msg.Msg))
+		log.Println("Send Mes Message", string(msg.Msg))
 
 		ctxRecv, cancal := context.WithTimeout(context.Background(), time.Second*20)
 		defer cancal()
 
 		return WaitRequest(ctxRecv, rsp)
 	}
+}
+
+type PieceInfoDownloadRequest struct {
+	XMLName              xml.Name   `xml:"Message"`
+	Header               Header `xml:"Header"`
+	MachineName          string     `xml:"Body>MACHINENAME"`
+	LotName              string     `xml:"Body>LOTNAME"`
+	ProductType          string     `xml:"Body>PRODUCTTYPE"`
+	CarrierName          string     `xml:"Body>CARRIERNAME"`
+	ProcessOperationName string     `xml:"Body>PROCESSOPERATIONNAME"`
+	ProductSpecName      string     `xml:"Body>PRODUCTSPECNAME"`
+	ProductRequestName   string     `xml:"Body>PRODUCTREQUESTNAME"`
+	ProductionType       string     `xml:"Body>PRODUCTIONTYPE"`
+	MachineRecipeName    string     `xml:"Body>MACHINERECIPENAME"`
+	LotJudge             string     `xml:"Body>LOTJUDGE"`
+	LotGrade             string     `xml:"Body>LOTGRADE"`
+	Length               string     `xml:"Body>LENGTH"`
+	Location             string     `xml:"Body>LOCATION"`
+	Result               string     `xml:"Body>RESULT"`
+	ResultDescription    string     `xml:"Body>RESULTDESCRIPTION"`
+	ReturnCode           string     `xml:"Return>RETURNCODE"`
+	ReturnMessage        string     `xml:"Return>RETURNMESSAGE"`
+}
+
+func (req *PieceInfoDownloadRequest) MarshalByte() []byte {
+	return MarshalByte(req)
+}
+
+func NewPieceInfoDownloadReq(machineName, factoryName, pieceName, carrierName string) mq.MqMessage {
+	messageName := "PieceInfoDownloadRequest"
+
+	header, id := NewHeader(messageName, machineName, factoryName)
+
+	req := PieceInfoDownloadRequest{
+		Header:               header,
+		MachineName:          machineName,
+		LotName:              pieceName,
+		ProductType:          "PRODUCTION",
+		CarrierName:          carrierName,
+		ProcessOperationName: "",
+		ProductSpecName:      "",
+		ProductRequestName:   "",
+		ProductionType:       "",
+		MachineRecipeName:    "",
+		LotJudge:             "",
+		LotGrade:             "",
+		Length:               "",
+		Location:             "",
+		Result:               "",
+		ResultDescription:    "",
+		ReturnCode:           "",
+		ReturnMessage:        "",
+	}
+
+	return mq.MqMessage{
+		Msg:           req.MarshalByte(),
+		CorrelationID: id,
+		IsEvent:       false,
+	}
+}
+
+func PieceInfoDownloadDecode(b []byte) (*PieceInfoDownloadRequest, error) {
+	if b == nil {
+		log.Fatal("nil response")
+	}
+
+	rsp := new(PieceInfoDownloadRequest)
+
+	if err := xml.Unmarshal(b, &rsp); err != nil {
+		return nil, err
+	}
+
+	if rsp.ReturnCode != "0" || rsp.Result != "0" {
+		log.Fatal(rsp.ReturnCode)
+	}
+
+	return rsp, nil
 }

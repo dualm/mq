@@ -16,3 +16,22 @@ FieldName = "Message"
 Language = "English"
 TimeOut = 60
 
+[MES-PRD]
+Host = "10.1.14.188"
+PassWord = "adm2021"
+Port = "5671"
+UserName = "mesadm"
+Vhost = "/mes"
+
+EapQueue = "MES.PRD.EDGE.G100"
+Exchange = "MES.PRD.EAP.SVR"
+QueryTargetRoutingKey = "MES.PRD.EAP.PEXsvr"
+Queue = "ZL.FMM.MES.PRD.PEXsvr"
+TargetExchange = "MES.PRD.EAP.SVR"
+TargetRoutingKey = "MES.PRD.EAP.PEXsvr"
+
+Charset = "UTF-8"
+FieldName = "Message"
+Language = "English"
+TimeOut = 60
+
