@@ -69,54 +69,65 @@ func (t *tibcoMq) Run(ctx context.Context, initConfig mq.ConfigFunc, configID st
 }
 
 func (t *tibcoMq) Send(ctx context.Context, responseChan chan<- mq.MqResponse, msg []mq.MqMessage) <-chan struct{} {
-	for _, m := range msg {
-		if m.Msg == nil {
-			if responseChan != nil {
-				responseChan <- mq.MqResponse{}
-			}
+	c := make(chan struct{})
 
-			continue
-		}
-
-		err := t.makeMsg(t.targetSubjectName, t.fieldName, string(m.Msg))
-
-		if err != nil {
-			responseChan <- mq.MqResponse{
-				Msg: nil,
-				Err: fmt.Errorf("make tibco message error, %w", err),
-			}
-
-			return nil
-		}
-
-		if m.IsEvent {
-			err := t.send()
-
-			if responseChan != nil {
-				responseChan <- mq.MqResponse{
-					Msg: nil,
-					Err: fmt.Errorf("send tibco message error, %w", err),
-				}
-			}
-		} else {
-			re, err := t.sendRequest(ctx)
-			if err != nil {
-				responseChan <- mq.MqResponse{
-					Msg: nil,
-					Err: fmt.Errorf("%s, %s\n", err, m.Msg),
+	go func() {
+		for _, m := range msg {
+			if m.Msg == nil {
+				if responseChan != nil {
+					responseChan <- mq.MqResponse{}
 				}
 
 				continue
 			}
 
-			responseChan <- mq.MqResponse{
-				Msg: []byte(re),
-				Err: err,
+			err := t.makeMsg(t.targetSubjectName, t.fieldName, string(m.Msg))
+
+			if err != nil {
+				responseChan <- mq.MqResponse{
+					Msg: nil,
+					Err: fmt.Errorf("make tibco message error, %w", err),
+				}
+
+				continue
+			}
+
+			if m.IsEvent {
+				err := t.send()
+
+				if responseChan != nil {
+					responseChan <- mq.MqResponse{
+						Msg: nil,
+						Err: func(e error) error {
+							if e != nil {
+								return fmt.Errorf("send tibco message error, %w", err)
+							}
+							return nil
+						}(err),
+					}
+				}
+			} else {
+				re, err := t.sendRequest(ctx)
+				if err != nil {
+					responseChan <- mq.MqResponse{
+						Msg: nil,
+						Err: fmt.Errorf("%s, %s\n", err, m.Msg),
+					}
+
+					continue
+				}
+
+				responseChan <- mq.MqResponse{
+					Msg: []byte(re),
+					Err: err,
+				}
 			}
 		}
-	}
 
-	return nil
+		c <- struct{}{}
+	}()
+
+	return c
 }
 
 func (t *tibcoMq) Close(ctx context.Context) {

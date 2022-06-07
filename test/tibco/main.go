@@ -22,7 +22,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
-	if m, err := tib.Run(ctx, InitConfig, "", ""); err != nil {
+	if m, err := tib.Run(ctx, InitConfig, "config", "CX"); err != nil {
 		log.Fatal(err)
 	} else {
 		log.Println(m)
@@ -30,34 +30,34 @@ func main() {
 
 	rspChan := make(chan mq.MqResponse)
 
-	req, err := NewRecipeValidationRequest("ACAB661B15010S001", "TEST01", []Parameter{
+	// req, err := NewRecipeValidationRequest("ACAB661B15010S001", "TEST01", []Parameter{
+	// 	{
+	// 		ItemName:  "P01",
+	// 		ItemValue: "1",
+	// 	}, {
+	// 		ItemName:  "P02",
+	// 		ItemValue: "2",
+	// 	},
+	// })
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// log.Println(string(req[0].Msg))
+
+	tib.Send(ctx, rspChan, []mq.MqMessage{
 		{
-			ItemName:  "P01",
-			ItemValue: "1",
-		}, {
-			ItemName:  "P02",
-			ItemValue: "2",
+			Msg:     []byte(spcMessage),
+			IsEvent: true,
 		},
 	})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Println(string(req[0].Msg))
-
-	go tib.Send(ctx, rspChan, req)
 
 	result := <-rspChan
 	if err := result.Err; err != nil {
 		log.Fatal(err)
 	}
 
-	_, err = RecipeValidationDecoder(result.Msg)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Println("Recipe Verified")
+	log.Println(result)
 }
 
 type RecipeValidationRequest struct {
@@ -207,3 +207,345 @@ func getTransactionId() string {
 
 	return fmt.Sprintf("%s%06d", t.Format("20060102150405"), micro)
 }
+
+var spcMessage string = `
+<Header>
+          <MESSAGENAME>DataCollectRequest</MESSAGENAME>
+          <EVENTCOMMENT>DataCollectRequest</EVENTCOMMENT>
+          <EVENTUSER>DataCollectRequest</EVENTUSER>
+          <ORIGINALSOURCESUBJECTNAME>_INBOX.TXZRLJTPVB.20220607134044199372</ORIGINALSOURCESUBJECTNAME>
+      </Header>
+      <Body>
+          <FACTORYNAME>TOKEN-3B</FACTORYNAME>
+          <PRODUCTSPECNAME>spec-1</PRODUCTSPECNAME>
+          <PROCESSFLOWNAME>-</PROCESSFLOWNAME>
+          <PROCESSOPERATIONNAME>operation-1</PROCESSOPERATIONNAME>
+          <MACHINENAME>MachineName</MACHINENAME>
+          <MACHINERECIPENAME>-</MACHINERECIPENAME>
+          <UNITNAME>UnitName</UNITNAME>
+          <LOTNAME>1RB-E1S210363-29-1</LOTNAME>
+          <PRODUCTNAME>1RB-E1S210363-29-1</PRODUCTNAME>
+          <ITEMLIST>
+              <ITEM>
+                  <ITEMNAME>X1</ITEMNAME>
+                  <SITELIST>
+                      <SITE>
+                          <SITENAME>001</SITENAME>
+                          <SITEVALUE>409</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                  </SITELIST>
+              </ITEM>
+              <ITEM>
+                  <ITEMNAME>X2</ITEMNAME>
+                  <SITELIST>
+                      <SITE>
+                          <SITENAME>001</SITENAME>
+                          <SITEVALUE>413</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                  </SITELIST>
+              </ITEM>
+              <ITEM>
+                  <ITEMNAME>X3</ITEMNAME>
+                  <SITELIST>
+                      <SITE>
+                          <SITENAME>001</SITENAME>
+                          <SITEVALUE>406</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                  </SITELIST>
+              </ITEM>
+              <ITEM>
+                  <ITEMNAME>X4</ITEMNAME>
+                  <SITELIST>
+                      <SITE>
+                          <SITENAME>001</SITENAME>
+                          <SITEVALUE>408</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                  </SITELIST>
+              </ITEM>
+              <ITEM>
+                  <ITEMNAME>X5</ITEMNAME>
+                  <SITELIST>
+                      <SITE>
+                          <SITENAME>001</SITENAME>
+                          <SITEVALUE>409</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                  </SITELIST>
+              </ITEM>
+              <ITEM>
+                  <ITEMNAME>X6</ITEMNAME>
+                  <SITELIST>
+                      <SITE>
+                          <SITENAME>001</SITENAME>
+                          <SITEVALUE>407</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                  </SITELIST>
+              </ITEM>
+              <ITEM>
+                  <ITEMNAME>X7</ITEMNAME>
+                  <SITELIST>
+                      <SITE>
+                          <SITENAME>001</SITENAME>
+                          <SITEVALUE>403</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                  </SITELIST>
+              </ITEM>
+              <ITEM>
+                  <ITEMNAME>X8</ITEMNAME>
+                  <SITELIST>
+                      <SITE>
+                          <SITENAME>001</SITENAME>
+                          <SITEVALUE>406</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                  </SITELIST>
+              </ITEM>
+              <ITEM>
+                  <ITEMNAME>X9</ITEMNAME>
+                  <SITELIST>
+                      <SITE>
+                          <SITENAME>001</SITENAME>
+                          <SITEVALUE>403</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                  </SITELIST>
+              </ITEM>
+              <ITEM>
+                  <ITEMNAME>X</ITEMNAME>
+                  <SITELIST>
+                      <SITE>
+                          <SITENAME>036</SITENAME>
+                          <SITEVALUE>407</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>038</SITENAME>
+                          <SITEVALUE>406</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>007</SITENAME>
+                          <SITEVALUE>409</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>025</SITENAME>
+                          <SITEVALUE>412</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>016</SITENAME>
+                          <SITEVALUE>408</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>019</SITENAME>
+                          <SITEVALUE>409</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>028</SITENAME>
+                          <SITEVALUE>408</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>033</SITENAME>
+                          <SITEVALUE>400</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>035</SITENAME>
+                          <SITEVALUE>403</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>037</SITENAME>
+                          <SITEVALUE>408</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>001</SITENAME>
+                          <SITEVALUE>409</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>012</SITENAME>
+                          <SITEVALUE>407</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>015</SITENAME>
+                          <SITEVALUE>406</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>017</SITENAME>
+                          <SITEVALUE>410</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>039</SITENAME>
+                          <SITEVALUE>405</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>044</SITENAME>
+                          <SITEVALUE>408</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>010</SITENAME>
+                          <SITEVALUE>410</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>013</SITENAME>
+                          <SITEVALUE>407</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>014</SITENAME>
+                          <SITEVALUE>408</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>021</SITENAME>
+                          <SITEVALUE>407</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>023</SITENAME>
+                          <SITEVALUE>409</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>030</SITENAME>
+                          <SITEVALUE>407</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>042</SITENAME>
+                          <SITEVALUE>410</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>004</SITENAME>
+                          <SITEVALUE>405</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>011</SITENAME>
+                          <SITEVALUE>410</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>031</SITENAME>
+                          <SITEVALUE>403</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>041</SITENAME>
+                          <SITEVALUE>409</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>022</SITENAME>
+                          <SITEVALUE>406</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>029</SITENAME>
+                          <SITEVALUE>408</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>018</SITENAME>
+                          <SITEVALUE>411</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>020</SITENAME>
+                          <SITEVALUE>407</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>027</SITENAME>
+                          <SITEVALUE>409</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>032</SITENAME>
+                          <SITEVALUE>397</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>034</SITENAME>
+                          <SITEVALUE>400</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>043</SITENAME>
+                          <SITEVALUE>410</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>002</SITENAME>
+                          <SITEVALUE>409</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>003</SITENAME>
+                          <SITEVALUE>406</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>008</SITENAME>
+                          <SITEVALUE>413</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>009</SITENAME>
+                          <SITEVALUE>413</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>024</SITENAME>
+                          <SITEVALUE>412</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>026</SITENAME>
+                          <SITEVALUE>404</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>040</SITENAME>
+                          <SITEVALUE>406</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>045</SITENAME>
+                          <SITEVALUE>403</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>005</SITENAME>
+                          <SITEVALUE>410</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                      <SITE>
+                          <SITENAME>006</SITENAME>
+                          <SITEVALUE>408</SITEVALUE>
+                          <SAMPLEMATERIALNAME></SAMPLEMATERIALNAME>
+                      </SITE>
+                  </SITELIST>
+              </ITEM>
+          </ITEMLIST>
+      </Body>
+`
