@@ -1,3 +1,4 @@
+[APS]
 EventComment = "RecipeParameterValidationRequest"
 EventUser = "CLN001"
 Listener = "PEMListener"
@@ -12,3 +13,14 @@ TibcoFieldName = "Message"
 TibcoNetwork = ";225.11.11.2"
 TibcoService = "8200"
 TibcoTargetSubjectName = "BOE.B9.MES.TEST.FAB.PEMsvr"
+
+[CX]
+TibcoEnable = true
+# SPC Tibco 参数
+TibcoDaemon = [
+    "tcp:10.11.111.30:7500"
+]
+TibcoFieldName = "xmlData"
+TibcoNetwork = ";225.14.14.5"
+TibcoService = "14450"
+TibcoTargetSubjectName = "CX.SB.MES.PRD.FAB.rSPCsvr"
