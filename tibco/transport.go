@@ -6,7 +6,9 @@ package tibco
 #include "tibrv/types.h"
 */
 import "C"
-import "fmt"
+import (
+	"fmt"
+)
 
 type Transport struct {
 	tibrvTransport C.tibrvTransport
@@ -35,6 +37,10 @@ func (transport *Transport) create(service, network string, daemon []string) err
 		transport.tibrvTransport = _transport
 
 		return nil
+	}
+
+	if len(daemon) != 0 {
+		return fmt.Errorf("daemons cannot connect")
 	}
 
 	_transport, err = newTransport(

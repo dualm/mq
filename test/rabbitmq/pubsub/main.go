@@ -37,10 +37,10 @@ func main() {
 	// 		log.Println("Error", err)
 	// 	}
 
-		// _, err = SendToMes(pb, NewAreYouThereReq("TestEQP_1", "ZLFMM"))
-		// if err != nil {
-		// 	log.Println("Error", err)
-		// }
+	// _, err = SendToMes(pb, NewAreYouThereReq("TestEQP_1", "ZLFMM"))
+	// if err != nil {
+	// 	log.Println("Error", err)
+	// }
 
 	// 	msg = NewMachineStateChangeEve("TestEQP_1", "ZLFMM", 1)
 
@@ -442,25 +442,25 @@ func SendToMes(m mq.Mq, msg mq.MqMessage) ([]byte, error) {
 }
 
 type PieceInfoDownloadRequest struct {
-	XMLName              xml.Name   `xml:"Message"`
-	Header               Header `xml:"Header"`
-	MachineName          string     `xml:"Body>MACHINENAME"`
-	LotName              string     `xml:"Body>LOTNAME"`
-	ProductType          string     `xml:"Body>PRODUCTTYPE"`
-	CarrierName          string     `xml:"Body>CARRIERNAME"`
-	ProcessOperationName string     `xml:"Body>PROCESSOPERATIONNAME"`
-	ProductSpecName      string     `xml:"Body>PRODUCTSPECNAME"`
-	ProductRequestName   string     `xml:"Body>PRODUCTREQUESTNAME"`
-	ProductionType       string     `xml:"Body>PRODUCTIONTYPE"`
-	MachineRecipeName    string     `xml:"Body>MACHINERECIPENAME"`
-	LotJudge             string     `xml:"Body>LOTJUDGE"`
-	LotGrade             string     `xml:"Body>LOTGRADE"`
-	Length               string     `xml:"Body>LENGTH"`
-	Location             string     `xml:"Body>LOCATION"`
-	Result               string     `xml:"Body>RESULT"`
-	ResultDescription    string     `xml:"Body>RESULTDESCRIPTION"`
-	ReturnCode           string     `xml:"Return>RETURNCODE"`
-	ReturnMessage        string     `xml:"Return>RETURNMESSAGE"`
+	XMLName              xml.Name `xml:"Message"`
+	Header               Header   `xml:"Header"`
+	MachineName          string   `xml:"Body>MACHINENAME"`
+	LotName              string   `xml:"Body>LOTNAME"`
+	ProductType          string   `xml:"Body>PRODUCTTYPE"`
+	CarrierName          string   `xml:"Body>CARRIERNAME"`
+	ProcessOperationName string   `xml:"Body>PROCESSOPERATIONNAME"`
+	ProductSpecName      string   `xml:"Body>PRODUCTSPECNAME"`
+	ProductRequestName   string   `xml:"Body>PRODUCTREQUESTNAME"`
+	ProductionType       string   `xml:"Body>PRODUCTIONTYPE"`
+	MachineRecipeName    string   `xml:"Body>MACHINERECIPENAME"`
+	LotJudge             string   `xml:"Body>LOTJUDGE"`
+	LotGrade             string   `xml:"Body>LOTGRADE"`
+	Length               string   `xml:"Body>LENGTH"`
+	Location             string   `xml:"Body>LOCATION"`
+	Result               string   `xml:"Body>RESULT"`
+	ResultDescription    string   `xml:"Body>RESULTDESCRIPTION"`
+	ReturnCode           string   `xml:"Return>RETURNCODE"`
+	ReturnMessage        string   `xml:"Return>RETURNMESSAGE"`
 }
 
 func (req *PieceInfoDownloadRequest) MarshalByte() []byte {

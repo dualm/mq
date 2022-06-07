@@ -90,10 +90,13 @@ func (t *tibcoMq) Send(ctx context.Context, responseChan chan<- mq.MqResponse, m
 		}
 
 		if m.IsEvent {
-			t.send()
+			err := t.send()
 
 			if responseChan != nil {
-				responseChan <- mq.MqResponse{}
+				responseChan <- mq.MqResponse{
+					Msg: nil,
+					Err: fmt.Errorf("send tibco message error, %w", err),
+				}
 			}
 		} else {
 			re, err := t.sendRequest(ctx)
