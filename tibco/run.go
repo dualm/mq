@@ -9,6 +9,7 @@ import "C"
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/dualm/common"
 	"github.com/dualm/mq"
@@ -20,6 +21,7 @@ const (
 
 type tibcoMq struct {
 	*TibOption
+	lock      sync.Mutex
 	infoChan  chan<- string
 	errChan   chan<- error
 	transport *Transport
@@ -35,6 +37,7 @@ type TibOption struct {
 
 func New(opt *TibOption, infoChan chan<- string, errChan chan<- error) *tibcoMq {
 	return &tibcoMq{
+		lock:      sync.Mutex{},
 		TibOption: opt,
 		infoChan:  infoChan,
 		errChan:   errChan,
@@ -121,13 +124,17 @@ func (t *tibcoMq) Send(ctx context.Context, responseChan chan<- mq.MqResponse, m
 	return c
 }
 
+func (t *tibcoMq) SendByPool(ctx context.Context, responseChan chan<- mq.MqResponse, msg []mq.MqMessage, targetSubjectName string) <-chan struct{} {
+	return nil
+}
+
 func (t *tibcoMq) Close(ctx context.Context) {
 	t.message.Destroy()
 	t.transport.Destroy()
 }
 
 func (t *tibcoMq) send() error {
-	return t.transport.send(t.message)
+	return t.transport.Send(t.message)
 }
 
 func (t *tibcoMq) sendRequest(ctx context.Context) (string, error) {
@@ -167,6 +174,9 @@ func (t *tibcoMq) sendRequest(ctx context.Context) (string, error) {
 }
 
 func (t *tibcoMq) makeMsg(targetSubjectName, fieldName string, msg string) error {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
 	err := t.message.Reset()
 	if err != nil {
 		return fmt.Errorf("reset message error, Error: %w", err)

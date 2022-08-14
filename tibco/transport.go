@@ -86,7 +86,7 @@ func newTransport(service, network, daemon *C.char) (C.tibrvTransport, error) {
 	return transport, nil
 }
 
-func (transport *Transport) send(msg *Message) error {
+func (transport *Transport) Send(msg *Message) error {
 	if status := C.tibrvTransport_Send(transport.tibrvTransport, msg.tibrvMsg); status != C.TIBRV_OK {
 		return fmt.Errorf("Send error, code: %d", status)
 	}
@@ -94,7 +94,7 @@ func (transport *Transport) send(msg *Message) error {
 	return nil
 }
 
-func (transport *Transport) sendv(msg []Message) error {
+func (transport *Transport) Sendv(msg []*Message) error {
 	msgs := make([]C.tibrvMsg, len(msg))
 	for i := range msg {
 		msgs[i] = msg[i].tibrvMsg
