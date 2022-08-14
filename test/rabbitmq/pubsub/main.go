@@ -22,11 +22,25 @@ func main() {
 	infoChan := make(chan string, 10)
 	errChan := make(chan error, 10)
 
-	pb := pubsub.New(infoChan, errChan)
-	if paras, err := pb.Run(ctx, InitConfig, "config", "MES-PRD"); err != nil {
+	config, err := InitConfig("config")
+	if err != nil {
 		log.Fatal(err)
-	} else {
-		log.Println(paras)
+	}
+
+	option := pubsub.PubSubOption{
+		User:           config.GetString("MES-PRD.Username"),
+		Password:       config.GetString("MES-PRD.Password"),
+		Host:           config.GetString("MES-PRD.Host"),
+		Port:           config.GetString("MES-PRD.Port"),
+		Vhost:          config.GetString("MES-PRD.Vhost"),
+		TargetExchange: config.GetString("MES-PRD.TargetExchange"),
+		RoutingKey:     config.GetString("MES-PRD.TargetRoutingKey"),
+		RspQueue:       config.GetString("MES-PRD.EapQueue"),
+	}
+
+	pb := pubsub.New(&option, infoChan, errChan)
+	if err := pb.Run(ctx); err != nil {
+		log.Fatal(err)
 	}
 
 	// go func() {
@@ -241,7 +255,7 @@ func main() {
 
 	// }()
 
-	infoReq := NewPieceInfoDownloadReq("OFFLINEFILE", "ZLFMM", "ABAB012B5V030S012P1", "")
+	infoReq := NewPieceInfoDownloadReq("OFFLINEFILE", "ZLFMM", "B4AB013B7M030S004", "")
 
 	re, err := SendToMes(pb, infoReq)
 	if err != nil {
@@ -250,9 +264,30 @@ func main() {
 
 	log.Println(string(re))
 
-	log.Println(PieceInfoDownloadDecode(re))
+	// infoReq := NewSheetInfoDownloadReq("OFFLINEFILE", "ZLFMM", "B4AB011B6N020S004")
 
-	<-ctx.Done()
+	// for i := 0; i < 1000; i++ {
+	// 	re, err := SendToMes(pb, infoReq)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+
+	// 	log.Println(string(re))
+
+	// 	_, err = PieceInfoDownloadDecode(re)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// }
+
+	// re, err = SendToMes(pb, mq.MqMessage{
+	// 	Msg:           nil,
+	// 	CorrelationID: "testtesttest",
+	// 	IsEvent:       false,
+	// })
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 }
 
 func InitConfig(configId string) (*viper.Viper, error) {
@@ -423,8 +458,8 @@ func WaitRequest(ctx context.Context, rsp <-chan mq.MqResponse) ([]byte, error) 
 }
 
 func SendToMes(m mq.Mq, msg mq.MqMessage) ([]byte, error) {
-	ctxSend, cancal := context.WithTimeout(context.Background(), time.Second*20)
-	defer cancal()
+	ctxSend, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	defer cancel()
 
 	rsp := make(chan mq.MqResponse, 1)
 
@@ -434,8 +469,8 @@ func SendToMes(m mq.Mq, msg mq.MqMessage) ([]byte, error) {
 	case <-m.Send(ctxSend, rsp, []mq.MqMessage{msg}):
 		log.Println("Send Mes Message", string(msg.Msg))
 
-		ctxRecv, cancal := context.WithTimeout(context.Background(), time.Second*20)
-		defer cancal()
+		ctxRecv, cancel := context.WithTimeout(context.Background(), time.Second*20)
+		defer cancel()
 
 		return WaitRequest(ctxRecv, rsp)
 	}
@@ -511,9 +546,79 @@ func PieceInfoDownloadDecode(b []byte) (*PieceInfoDownloadRequest, error) {
 		return nil, err
 	}
 
-	if rsp.ReturnCode != "0" || rsp.Result != "0" {
+	if rsp.ReturnCode != "0" {
 		log.Fatal(rsp.ReturnCode)
 	}
 
 	return rsp, nil
+}
+
+type SheetInfoDownloadRequest struct {
+	XMLName              xml.Name        `xml:"Message"`
+	Header               Header          `xml:"Header"`
+	MachineName          string          `xml:"Body>MACHINENAME"`
+	LotName              string          `xml:"Body>LOTNAME"`
+	ProductType          string          `xml:"Body>PRODUCTTYPE"`
+	CarrierName          string          `xml:"Body>CARRIERNAME"`
+	SheetNo              string          `xml:"Body>SHEETNO"`
+	ProcessOperationName string          `xml:"Body>PROCESSOPERATIONNAME"`
+	ProductSpecName      string          `xml:"Body>PRODUCTSPECNAME"`
+	ProductRequestName   string          `xml:"Body>PRODUCTREQUESTNAME"`
+	ProductionType       string          `xml:"Body>PRODUCTIONTYPE"`
+	ProcessFlowName      string          `xml:"Body>PROCESSFLOWNAME"`
+	MachineRecipeName    string          `xml:"Body>MACHINERECIPENAME"`
+	LotJudge             string          `xml:"Body>LOTJUDGE"`
+	LotGrade             string          `xml:"Body>LOTGRADE"`
+	Length               string          `xml:"Body>LENGTH"`
+	Location             string          `xml:"Body>LOCATION"`
+	Result               string          `xml:"Body>RESULT"`
+	ResultDescription    string          `xml:"Body>RESULTDESCRIPTION"`
+	PieceList            []ExteriorPiece `xml:"Body>PIECELIST>PIECE"`
+	ReturnCode           string          `xml:"Return>RETURNCODE"`
+	ReturnMessage        string          `xml:"Return>RETURNMESSAGE"`
+}
+
+func (req *SheetInfoDownloadRequest) MarshalByte() []byte {
+	return MarshalByte(req)
+}
+
+type ExteriorPiece struct {
+	XMLName    xml.Name `xml:"PIECE"`
+	PieceId    string   `xml:"PIECEID"`
+	PieceJudge string   `xml:"PIECEJUDGE"`
+	PieceCode  string   `xml:"PIECECODE"`
+}
+
+func NewSheetInfoDownloadReq(machineName, factoryName, sheetName string) mq.MqMessage {
+	messageName := "SheetInfoDownloadRequest"
+
+	header, id := NewHeader(messageName, machineName, factoryName)
+
+	req := SheetInfoDownloadRequest{
+		Header:               header,
+		MachineName:          machineName,
+		LotName:              sheetName,
+		ProductType:          "",
+		CarrierName:          "",
+		ProcessOperationName: "",
+		ProductSpecName:      "",
+		ProductRequestName:   "",
+		ProductionType:       "",
+		ProcessFlowName:      "",
+		MachineRecipeName:    "",
+		LotJudge:             "",
+		LotGrade:             "",
+		Length:               "",
+		Location:             "",
+		Result:               "",
+		ResultDescription:    "",
+		ReturnCode:           "",
+		ReturnMessage:        "",
+	}
+
+	return mq.MqMessage{
+		Msg:           req.MarshalByte(),
+		CorrelationID: id,
+		IsEvent:       false,
+	}
 }

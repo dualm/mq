@@ -11,15 +11,6 @@ import (
 
 const (
 	URLFORMAT           = "amqp://%s:%s@%s:%s"
-	RbtUsername         = "Username"
-	RbtPassword         = "Password"
-	RbtHost             = "Host"
-	RbtPort             = "Port"
-	RbtTargetExchange   = "TargetExchange"
-	RbtTargetRoutingKey = "TargetRoutingKey"
-	RbtQueue            = "Queue"
-	RbtClientQueue      = "EapQueue"
-	RbtVHost            = "Vhost"
 
 	ChanBufferSize = 0
 )

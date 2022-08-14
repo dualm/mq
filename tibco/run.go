@@ -9,7 +9,6 @@ import "C"
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/dualm/common"
 	"github.com/dualm/mq"
@@ -20,74 +19,54 @@ const (
 )
 
 type tibcoMq struct {
-	infoChan          chan<- string
-	errChan           chan<- error
-	targetSubjectName string
-	fieldName         string
-	service           string
-	network           string
-	daemon            []string
-	transport         *Transport
-	message           *Message
+	*TibOption
+	infoChan  chan<- string
+	errChan   chan<- error
+	transport *Transport
+	message   *Message
 }
 
-func New(infoChan chan<- string, errChan chan<- error) mq.Mq {
+type TibOption struct {
+	FieldName string
+	Service   string
+	Network   string
+	Daemon    []string
+}
+
+func New(opt *TibOption, infoChan chan<- string, errChan chan<- error) *tibcoMq {
 	return &tibcoMq{
-		infoChan: infoChan,
-		errChan:  errChan,
+		TibOption: opt,
+		infoChan:  infoChan,
+		errChan:   errChan,
 	}
 }
 
 // Run implements mq.Mq
-func (t *tibcoMq) Run(ctx context.Context, initConfig mq.ConfigFunc, configID string, keys string) (map[string]string, error) {
-	conf, err := initConfig(configID)
-	if err != nil {
-		return nil, fmt.Errorf("tibco init config error, Error: %w", err)
+func (t *tibcoMq) Run(ctx context.Context) error {
+	if err := t.init(); err != nil {
+		return fmt.Errorf("tibco init error, Error: %w", err)
 	}
 
-	if conf == nil {
-		return nil, fmt.Errorf("nil config")
-	}
-
-	t.service = common.GetString(conf, keys, TibcoService)
-	t.network = common.GetString(conf, keys, TibcoNetwork)
-	t.daemon = common.GetStringSlice(conf, keys, TibcoDaemon)
-	t.fieldName = common.GetString(conf, keys, TibcoFieldName)
-	t.targetSubjectName = common.GetString(conf, keys, TibcoSubjectName)
-
-	if err := t.init(t.service, t.network, t.daemon); err != nil {
-		return nil, fmt.Errorf("tibco init error, Error: %w", err)
-	}
-
-	return map[string]string{
-		"Service":           t.service,
-		"Network":           t.network,
-		"Daemon":            strings.Join(t.daemon, ","),
-		"FieldName":         t.fieldName,
-		"TargetSubjectName": t.targetSubjectName,
-	}, nil
+	return nil
 }
 
-func (t *tibcoMq) Send(ctx context.Context, responseChan chan<- mq.MqResponse, msg []mq.MqMessage) <-chan struct{} {
+func (t *tibcoMq) Send(ctx context.Context, responseChan chan<- mq.MqResponse, msg []mq.MqMessage, targetSubjectName string) <-chan struct{} {
 	c := make(chan struct{})
 
 	go func() {
 		for _, m := range msg {
 			if m.Msg == nil {
 				if responseChan != nil {
-					responseChan <- mq.MqResponse{}
+					common.SendInNewRT(ctx, mq.MqResponse{}, responseChan)
 				}
 
 				continue
 			}
 
-			err := t.makeMsg(t.targetSubjectName, t.fieldName, string(m.Msg))
+			err := t.makeMsg(targetSubjectName, t.FieldName, string(m.Msg))
 
 			if err != nil {
-				responseChan <- mq.MqResponse{
-					Msg: nil,
-					Err: fmt.Errorf("make tibco message error, %w", err),
-				}
+				common.SendInNewRT(ctx, mq.MqResponse{Msg: nil, Err: fmt.Errorf("make tibco message error, %w", err)}, responseChan)
 
 				continue
 			}
@@ -96,31 +75,43 @@ func (t *tibcoMq) Send(ctx context.Context, responseChan chan<- mq.MqResponse, m
 				err := t.send()
 
 				if responseChan != nil {
-					responseChan <- mq.MqResponse{
-						Msg: nil,
-						Err: func(e error) error {
-							if e != nil {
-								return fmt.Errorf("send tibco message error, %w", err)
-							}
-							return nil
-						}(err),
-					}
+					common.SendInNewRT(
+						ctx,
+						mq.MqResponse{
+							Msg: nil,
+							Err: func(e error) error {
+								if e != nil {
+									return fmt.Errorf("send tibco message error, %w", err)
+								}
+								return nil
+							}(err),
+						},
+						responseChan,
+					)
 				}
 			} else {
 				re, err := t.sendRequest(ctx)
 				if err != nil {
-					responseChan <- mq.MqResponse{
-						Msg: nil,
-						Err: fmt.Errorf("%s, %s\n", err, m.Msg),
-					}
+					common.SendInNewRT(
+						ctx,
+						mq.MqResponse{
+							Msg: nil,
+							Err: fmt.Errorf("%s, %s\n", err, m.Msg),
+						},
+						responseChan,
+					)
 
 					continue
 				}
 
-				responseChan <- mq.MqResponse{
-					Msg: []byte(re),
-					Err: err,
-				}
+				common.SendInNewRT(
+					ctx,
+					mq.MqResponse{
+						Msg: []byte(re),
+						Err: err,
+					},
+					responseChan,
+				)
 			}
 		}
 
@@ -132,7 +123,7 @@ func (t *tibcoMq) Send(ctx context.Context, responseChan chan<- mq.MqResponse, m
 
 func (t *tibcoMq) Close(ctx context.Context) {
 	t.message.Destroy()
-	t.transport.destroy()
+	t.transport.Destroy()
 }
 
 func (t *tibcoMq) send() error {
@@ -155,7 +146,7 @@ func (t *tibcoMq) sendRequest(ctx context.Context) (string, error) {
 			_re.Destroy()
 		}()
 
-		s, err := _re.GetString(t.fieldName, 0)
+		s, err := _re.GetString(t.FieldName, 0)
 		if err != nil {
 			errChan <- fmt.Errorf("GetString from response error, Error: %w", err)
 
@@ -192,24 +183,20 @@ func (t *tibcoMq) makeMsg(targetSubjectName, fieldName string, msg string) error
 	return nil
 }
 
-func (t *tibcoMq) init(service, network string, daemons []string) error {
+func (t *tibcoMq) init() error {
+	var err error
+
 	if err := tibrvOpen(); err != nil {
 		return fmt.Errorf("tibrv open error, Error: %w", err)
 	}
 
-	t.transport = NewTransport()
-
-	if err := t.transport.create(
-		service,
-		network,
-		daemons,
-	); err != nil {
+	t.transport, err = NewTransport(t.Service, t.Network, t.Daemon)
+	if err != nil {
 		return fmt.Errorf("creating transport error, Error: %w", err)
 	}
 
-	t.message = NewMessage()
-
-	if err := t.message.Create(); err != nil {
+	t.message, err = NewMessage()
+	if err != nil {
 		return fmt.Errorf("create message error, Error: %w", err)
 	}
 

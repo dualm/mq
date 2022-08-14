@@ -13,6 +13,15 @@ import (
 	"github.com/spf13/viper"
 )
 
+type Sheet struct {
+	Name     string
+	Interval time.Duration
+}
+
+type Sheets struct {
+	Sheets []Sheet
+}
+
 func main() {
 	machineName := "TEST-M"
 	recipe := ""
@@ -28,11 +37,25 @@ func main() {
 	infoChan := make(chan string, 10)
 	errChan := make(chan error, 10)
 
-	r := rpc.New(infoChan, errChan)
-	if paras, err := r.Run(ctx, InitConfig, "config", "SPC"); err != nil {
+	config, err := InitConfig("config")
+	if err != nil {
 		log.Fatal(err)
-	} else {
-		log.Println(paras)
+	}
+
+	option := rpc.RpcOption{
+		Username:    config.GetString("SPC.UserName"),
+		Password:    config.GetString("SPC.PassWord"),
+		Host:        config.GetString("SPC.Host"),
+		Port:        config.GetString("SPC Port"),
+		Queue:       config.GetString("SPC.Queue"),
+		VHost:       config.GetString("SPC.Vhost"),
+		ClientQueue: config.GetString("SPC.EapQueue"),
+	}
+
+	r := rpc.New(&option, infoChan, errChan)
+
+	if err := r.Run(ctx); err != nil {
+		log.Fatal(err)
 	}
 
 	zispc.UnsetWithS()

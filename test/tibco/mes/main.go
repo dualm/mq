@@ -14,18 +14,27 @@ import (
 )
 
 func main() {
-	infoChan := make(chan string)
-	errChan := make(chan error)
-
-	tib := tibco.New(infoChan, errChan)
-
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
-	if m, err := tib.Run(ctx, InitConfig, "config", "CX"); err != nil {
+	infoChan := make(chan string)
+	errChan := make(chan error)
+	config, err := InitConfig("config")
+	if err != nil {
 		log.Fatal(err)
-	} else {
-		log.Println(m)
+	}
+
+	opt := tibco.TibOption{
+		FieldName: config.GetString("APS.TibcoFieldName"),
+		Service:   config.GetString("APS.TibcoService"),
+		Network:   config.GetString("APS.TibcoNetwork"),
+		Daemon:    config.GetStringSlice("APS.TibcoDaemon"),
+	}
+
+	tib := tibco.New(&opt, infoChan, errChan)
+
+	if err := tib.Run(ctx); err != nil {
+		log.Fatal(err)
 	}
 
 	rspChan := make(chan mq.MqResponse)
@@ -45,12 +54,17 @@ func main() {
 
 	// log.Println(string(req[0].Msg))
 
-	tib.Send(ctx, rspChan, []mq.MqMessage{
-		{
-			Msg:     []byte(spcMessage),
-			IsEvent: true,
+	tib.Send(
+		ctx,
+		rspChan,
+		[]mq.MqMessage{
+			{
+				Msg:     []byte(spcMessage),
+				IsEvent: true,
+			},
 		},
-	})
+		config.GetString("APS.TibcoTargetSubjectName"),
+	)
 
 	result := <-rspChan
 	if err := result.Err; err != nil {
