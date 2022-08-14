@@ -107,7 +107,7 @@ func (transport *Transport) Sendv(msg []*Message) error {
 	return nil
 }
 
-func (transport *Transport) sendReply(reply *Message, request *Message) error {
+func (transport *Transport) SendReply(reply *Message, request *Message) error {
 	if status := C.tibrvTransport_SendReply(transport.tibrvTransport, reply.tibrvMsg, request.tibrvMsg); status != C.TIBRV_OK {
 		return fmt.Errorf("SendReply error, code: %d", status)
 	}

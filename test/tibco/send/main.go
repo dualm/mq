@@ -11,16 +11,17 @@ import (
 
 func main() {
 	opt := tibco.TibOption{
-		FieldName: "Message",
-		Service:   "",
-		Network:   "",
-		Daemon:    []string{},
+		FieldName:         "Message",
+		Service:           "",
+		Network:           "",
+		Daemon:            []string{},
+		TargetSubjectName: "a",
 	}
 
 	infoC := make(chan string)
 	errC := make(chan error)
 
-	tib := tibco.New(&opt, infoC, errC)
+	tib := tibco.NewTibSender(&opt, infoC, errC)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -44,7 +45,6 @@ func main() {
 						IsEvent:       true,
 					},
 				},
-				"a",
 			)
 
 			<-resp
@@ -66,7 +66,6 @@ func main() {
 						IsEvent:       true,
 					},
 				},
-				"a",
 			)
 
 			<-resp

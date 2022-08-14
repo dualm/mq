@@ -25,13 +25,14 @@ func main() {
 	}
 
 	opt := tibco.TibOption{
-		FieldName: config.GetString("APS.TibcoFieldName"),
-		Service:   config.GetString("APS.TibcoService"),
-		Network:   config.GetString("APS.TibcoNetwork"),
-		Daemon:    config.GetStringSlice("APS.TibcoDaemon"),
+		FieldName:         config.GetString("APS.TibcoFieldName"),
+		Service:           config.GetString("APS.TibcoService"),
+		Network:           config.GetString("APS.TibcoNetwork"),
+		Daemon:            config.GetStringSlice("APS.TibcoDaemon"),
+		TargetSubjectName: config.GetString("APS.TibcoTargetSubjectName"),
 	}
 
-	tib := tibco.New(&opt, infoChan, errChan)
+	tib := tibco.NewTibSender(&opt, infoChan, errChan)
 
 	if err := tib.Run(ctx); err != nil {
 		log.Fatal(err)
@@ -63,7 +64,6 @@ func main() {
 				IsEvent: true,
 			},
 		},
-		config.GetString("APS.TibcoTargetSubjectName"),
 	)
 
 	result := <-rspChan
