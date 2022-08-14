@@ -1,7 +1,8 @@
 package tibco
 
 /*
-#include "tibrv/tibrv.h"
+#include <stdlib.h>
+#include "tibrv/cm.h"
 */
 import "C"
 import (
@@ -17,22 +18,16 @@ type Message struct {
 	tibrvMsg C.tibrvMsg
 }
 
-func NewMessage() *Message {
+func NewMessage() (*Message, error) {
 	var _msg C.tibrvMsg
+
+	if status := C.tibrvMsg_Create(&_msg); status != C.TIBRV_OK {
+		return nil, fmt.Errorf("Create message error, code: %d", status)
+	}
+
 	return &Message{
 		tibrvMsg: _msg,
-	}
-}
-
-func (msg *Message) Create() error {
-	var _msg C.tibrvMsg
-	if status := C.tibrvMsg_Create(&_msg); status != C.TIBRV_OK {
-		return fmt.Errorf("Create message error, code: %d", status)
-	}
-
-	msg.tibrvMsg = _msg
-
-	return nil
+	}, nil
 }
 
 func (msg *Message) CopyCreate(m Message) error {
@@ -108,20 +103,24 @@ func (msg Message) GetClosure() ([]byte, error) {
 	return *(*[]byte)(b), nil
 }
 
-func (msg Message) GetEvent() (*event, error) {
+func (msg Message) GetEvent() (*Event, error) {
 	var _event C.tibrvEvent
 	if status := C.tibrvMsg_GetEvent(msg.tibrvMsg, &_event); status != C.TIBRV_OK {
 		return nil, fmt.Errorf("GetEvent error, code: %d", status)
 	}
 
-	return &event{
+	return &Event{
 		tibrvEvent: _event,
 	}, nil
 }
 
 func (msg Message) GetField(fieldName string, fieldId uint16) (*MsgField, error) {
 	var _field C.tibrvMsgField
-	if status := C.tibrvMsg_GetFieldEx(msg.tibrvMsg, C.CString(fieldName), &_field, C.ushort(fieldId)); status != C.TIBRV_OK {
+
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetFieldEx(msg.tibrvMsg, _cFieldName, &_field, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return nil, fmt.Errorf("GetField error, code: %d", status)
 	}
 
@@ -133,7 +132,11 @@ func (msg Message) GetField(fieldName string, fieldId uint16) (*MsgField, error)
 
 func (msg Message) GetBool(fieldName string, fieldId uint16) (bool, error) {
 	var b C.tibrv_bool
-	if status := C.tibrvMsg_GetBoolEx(msg.tibrvMsg, C.CString(fieldName), &b, C.ushort(fieldId)); status != C.TIBRV_OK {
+
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetBoolEx(msg.tibrvMsg, _cFieldName, &b, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return false, fmt.Errorf("GetBool error, code: %d", status)
 	}
 
@@ -155,7 +158,11 @@ func (msg Message) GetF32(fieldName string, fieldId uint16) (float32, error) {
 
 func (msg Message) GetF64(fieldName string, fieldId uint16) (float64, error) {
 	var f C.tibrv_f64
-	if status := C.tibrvMsg_GetF64Ex(msg.tibrvMsg, C.CString(fieldName), &f, C.ushort(fieldId)); status != C.TIBRV_OK {
+
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetF64Ex(msg.tibrvMsg, _cFieldName, &f, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return 0, fmt.Errorf("GetF64 error, code: %d", status)
 	}
 
@@ -164,7 +171,11 @@ func (msg Message) GetF64(fieldName string, fieldId uint16) (float64, error) {
 
 func (msg Message) GetI8(fieldName string, fieldId uint16) (int8, error) {
 	var i C.tibrv_i8
-	if status := C.tibrvMsg_GetI8Ex(msg.tibrvMsg, C.CString(fieldName), &i, C.ushort(fieldId)); status != C.TIBRV_OK {
+
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetI8Ex(msg.tibrvMsg, _cFieldName, &i, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return 0, fmt.Errorf("GetI8 error, code: %d", status)
 	}
 
@@ -173,7 +184,11 @@ func (msg Message) GetI8(fieldName string, fieldId uint16) (int8, error) {
 
 func (msg Message) GetI16(fieldName string, fieldId uint16) (int16, error) {
 	var i C.tibrv_i16
-	if status := C.tibrvMsg_GetI16Ex(msg.tibrvMsg, C.CString(fieldName), &i, C.ushort(fieldId)); status != C.TIBRV_OK {
+
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetI16Ex(msg.tibrvMsg, _cFieldName, &i, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return 0, fmt.Errorf("GetI16 error, code: %d", status)
 	}
 
@@ -182,7 +197,11 @@ func (msg Message) GetI16(fieldName string, fieldId uint16) (int16, error) {
 
 func (msg Message) GetI32(fieldName string, fieldId uint16) (int32, error) {
 	var i C.tibrv_i32
-	if status := C.tibrvMsg_GetI32Ex(msg.tibrvMsg, C.CString(fieldName), &i, C.ushort(fieldId)); status != C.TIBRV_OK {
+
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetI32Ex(msg.tibrvMsg, _cFieldName, &i, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return 0, fmt.Errorf("GetI32 error, code: %d", status)
 	}
 
@@ -191,7 +210,11 @@ func (msg Message) GetI32(fieldName string, fieldId uint16) (int32, error) {
 
 func (msg Message) GetI64(fieldName string, fieldId uint16) (int64, error) {
 	var i C.tibrv_i64
-	if status := C.tibrvMsg_GetI64Ex(msg.tibrvMsg, C.CString(fieldName), &i, C.ushort(fieldId)); status != C.TIBRV_OK {
+
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetI64Ex(msg.tibrvMsg, _cFieldName, &i, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return 0, fmt.Errorf("GetI64 error, code: %d", status)
 	}
 
@@ -200,7 +223,11 @@ func (msg Message) GetI64(fieldName string, fieldId uint16) (int64, error) {
 
 func (msg Message) GetU8(fieldName string, fieldId uint16) (uint8, error) {
 	var i C.tibrv_u8
-	if status := C.tibrvMsg_GetU8Ex(msg.tibrvMsg, C.CString(fieldName), &i, C.ushort(fieldId)); status != C.TIBRV_OK {
+
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetU8Ex(msg.tibrvMsg, _cFieldName, &i, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return 0, fmt.Errorf("GetU8 error, code: %d", status)
 	}
 
@@ -209,7 +236,11 @@ func (msg Message) GetU8(fieldName string, fieldId uint16) (uint8, error) {
 
 func (msg Message) GetU16(fieldName string, fieldId uint16) (uint16, error) {
 	var i C.tibrv_u16
-	if status := C.tibrvMsg_GetU16Ex(msg.tibrvMsg, C.CString(fieldName), &i, C.ushort(fieldId)); status != C.TIBRV_OK {
+
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetU16Ex(msg.tibrvMsg, _cFieldName, &i, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return 0, fmt.Errorf("GetU16 error, code: %d", status)
 	}
 
@@ -218,7 +249,11 @@ func (msg Message) GetU16(fieldName string, fieldId uint16) (uint16, error) {
 
 func (msg Message) GetU32(fieldName string, fieldId uint16) (uint32, error) {
 	var i C.tibrv_u32
-	if status := C.tibrvMsg_GetU32Ex(msg.tibrvMsg, C.CString(fieldName), &i, C.ushort(fieldId)); status != C.TIBRV_OK {
+
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetU32Ex(msg.tibrvMsg, _cFieldName, &i, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return 0, fmt.Errorf("GetU32 error, code: %d", status)
 	}
 
@@ -227,7 +262,11 @@ func (msg Message) GetU32(fieldName string, fieldId uint16) (uint32, error) {
 
 func (msg Message) GetU64(fieldName string, fieldId uint16) (uint64, error) {
 	var i C.tibrv_u64
-	if status := C.tibrvMsg_GetU64Ex(msg.tibrvMsg, C.CString(fieldName), &i, C.ushort(fieldId)); status != C.TIBRV_OK {
+
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetU64Ex(msg.tibrvMsg, _cFieldName, &i, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return 0, fmt.Errorf("GetU64 error, code: %d", status)
 	}
 
@@ -236,7 +275,11 @@ func (msg Message) GetU64(fieldName string, fieldId uint16) (uint64, error) {
 
 func (msg Message) GetIPAddr32(fieldName string, fieldId uint16) (uint32, error) {
 	var ip C.tibrv_ipaddr32
-	if status := C.tibrvMsg_GetIPAddr32Ex(msg.tibrvMsg, C.CString(fieldName), &ip, C.ushort(fieldId)); status != C.TIBRV_OK {
+
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetIPAddr32Ex(msg.tibrvMsg, _cFieldName, &ip, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return 0, fmt.Errorf("GetIPAddr32 error, code: %d", status)
 	}
 
@@ -245,7 +288,11 @@ func (msg Message) GetIPAddr32(fieldName string, fieldId uint16) (uint32, error)
 
 func (msg Message) GetIPPort16(fieldName string, fieldId uint16) (uint16, error) {
 	var port C.tibrv_ipport16
-	if status := C.tibrvMsg_GetIPPort16Ex(msg.tibrvMsg, C.CString(fieldName), &port, C.ushort(fieldId)); status != C.TIBRV_OK {
+
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetIPPort16Ex(msg.tibrvMsg, _cFieldName, &port, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return 0, fmt.Errorf("GetIPPort16 error, code: %d", status)
 	}
 
@@ -257,7 +304,10 @@ func (msg Message) GetF32Array(fieldName string, fieldId uint16) ([]float32, err
 	_p := (*C.float)(unsafe.Pointer(&f[0]))
 	var n C.tibrv_u32
 
-	if status := C.tibrvMsg_GetF32ArrayEx(msg.tibrvMsg, C.CString(fieldName), &_p, &n, C.ushort(fieldId)); status != C.TIBRV_OK {
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetF32ArrayEx(msg.tibrvMsg, _cFieldName, &_p, &n, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return nil, fmt.Errorf(" error, code: %d", status)
 	}
 
@@ -269,7 +319,10 @@ func (msg Message) GetF64Array(fieldName string, fieldId uint16) ([]float64, err
 	_p := (*C.double)(unsafe.Pointer(&f[0]))
 	var n C.tibrv_u32
 
-	if status := C.tibrvMsg_GetF64ArrayEx(msg.tibrvMsg, C.CString(fieldName), &_p, &n, C.ushort(fieldId)); status != C.TIBRV_OK {
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetF64ArrayEx(msg.tibrvMsg, _cFieldName, &_p, &n, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return nil, fmt.Errorf(" error, code: %d", status)
 	}
 
@@ -281,7 +334,10 @@ func (msg Message) GetI8Array(fieldName string, fieldId uint16) ([]int8, error) 
 	_p := (*C.schar)(unsafe.Pointer(&f[0]))
 	var n C.tibrv_u32
 
-	if status := C.tibrvMsg_GetI8ArrayEx(msg.tibrvMsg, C.CString(fieldName), &_p, &n, C.ushort(fieldId)); status != C.TIBRV_OK {
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetI8ArrayEx(msg.tibrvMsg, _cFieldName, &_p, &n, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return nil, fmt.Errorf(" error, code: %d", status)
 	}
 
@@ -293,7 +349,10 @@ func (msg Message) GetI16Array(fieldName string, fieldId uint16) ([]int16, error
 	_p := (*C.short)(unsafe.Pointer(&f[0]))
 	var n C.tibrv_u32
 
-	if status := C.tibrvMsg_GetI16ArrayEx(msg.tibrvMsg, C.CString(fieldName), &_p, &n, C.ushort(fieldId)); status != C.TIBRV_OK {
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetI16ArrayEx(msg.tibrvMsg, _cFieldName, &_p, &n, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return nil, fmt.Errorf(" error, code: %d", status)
 	}
 
@@ -305,7 +364,10 @@ func (msg Message) GetI32Array(fieldName string, fieldId uint16) ([]int32, error
 	_p := (*C.int)(unsafe.Pointer(&f[0]))
 	var n C.tibrv_u32
 
-	if status := C.tibrvMsg_GetI32ArrayEx(msg.tibrvMsg, C.CString(fieldName), &_p, &n, C.ushort(fieldId)); status != C.TIBRV_OK {
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetI32ArrayEx(msg.tibrvMsg, _cFieldName, &_p, &n, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return nil, fmt.Errorf(" error, code: %d", status)
 	}
 
@@ -317,7 +379,10 @@ func (msg Message) GetI64Array(fieldName string, fieldId uint16) ([]int64, error
 	_p := (*C.longlong)(unsafe.Pointer(&f[0]))
 	var n C.tibrv_u32
 
-	if status := C.tibrvMsg_GetI64ArrayEx(msg.tibrvMsg, C.CString(fieldName), &_p, &n, C.ushort(fieldId)); status != C.TIBRV_OK {
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetI64ArrayEx(msg.tibrvMsg, _cFieldName, &_p, &n, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return nil, fmt.Errorf(" error, code: %d", status)
 	}
 
@@ -329,7 +394,10 @@ func (msg Message) GetU8Array(fieldName string, fieldId uint16) ([]uint8, error)
 	_p := (*C.uchar)(unsafe.Pointer(&f[0]))
 	var n C.tibrv_u32
 
-	if status := C.tibrvMsg_GetU8ArrayEx(msg.tibrvMsg, C.CString(fieldName), &_p, &n, C.ushort(fieldId)); status != C.TIBRV_OK {
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetU8ArrayEx(msg.tibrvMsg, _cFieldName, &_p, &n, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return nil, fmt.Errorf(" error, code: %d", status)
 	}
 
@@ -341,7 +409,10 @@ func (msg Message) GetU16Array(fieldName string, fieldId uint16) ([]uint16, erro
 	_p := (*C.ushort)(unsafe.Pointer(&f[0]))
 	var n C.tibrv_u32
 
-	if status := C.tibrvMsg_GetU16ArrayEx(msg.tibrvMsg, C.CString(fieldName), &_p, &n, C.ushort(fieldId)); status != C.TIBRV_OK {
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetU16ArrayEx(msg.tibrvMsg, _cFieldName, &_p, &n, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return nil, fmt.Errorf(" error, code: %d", status)
 	}
 
@@ -353,7 +424,10 @@ func (msg Message) GetU32Array(fieldName string, fieldId uint16) ([]uint32, erro
 	_p := (*C.uint)(unsafe.Pointer(&f[0]))
 	var n C.tibrv_u32
 
-	if status := C.tibrvMsg_GetU32ArrayEx(msg.tibrvMsg, C.CString(fieldName), &_p, &n, C.ushort(fieldId)); status != C.TIBRV_OK {
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetU32ArrayEx(msg.tibrvMsg, _cFieldName, &_p, &n, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return nil, fmt.Errorf(" error, code: %d", status)
 	}
 
@@ -365,7 +439,10 @@ func (msg Message) GetU64Array(fieldName string, fieldId uint16) ([]uint64, erro
 	_p := (*C.ulonglong)(unsafe.Pointer(&f[0]))
 	var n C.tibrv_u32
 
-	if status := C.tibrvMsg_GetU64ArrayEx(msg.tibrvMsg, C.CString(fieldName), &_p, &n, C.ushort(fieldId)); status != C.TIBRV_OK {
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetU64ArrayEx(msg.tibrvMsg, _cFieldName, &_p, &n, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return nil, fmt.Errorf(" error, code: %d", status)
 	}
 
@@ -377,7 +454,10 @@ func (msg Message) GetMsgArray(fieldName string, fieldId uint16) ([]C.tibrvMsg, 
 	_p := (*C.tibrvMsg)(unsafe.Pointer(&f[0]))
 	var n C.tibrv_u32
 
-	if status := C.tibrvMsg_GetMsgArrayEx(msg.tibrvMsg, C.CString(fieldName), &_p, &n, C.ushort(fieldId)); status != C.TIBRV_OK {
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetMsgArrayEx(msg.tibrvMsg, _cFieldName, &_p, &n, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return nil, fmt.Errorf(" error, code: %d", status)
 	}
 
@@ -389,7 +469,10 @@ func (msg Message) GetStringArray(fieldName string, fieldId uint16) ([]string, e
 	_p := (**C.char)(unsafe.Pointer(&f[0]))
 	var n C.tibrv_u32
 
-	if status := C.tibrvMsg_GetStringArrayEx(msg.tibrvMsg, C.CString(fieldName), &_p, &n, C.ushort(fieldId)); status != C.TIBRV_OK {
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetStringArrayEx(msg.tibrvMsg, _cFieldName, &_p, &n, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return nil, fmt.Errorf(" error, code: %d", status)
 	}
 
@@ -399,7 +482,11 @@ func (msg Message) GetStringArray(fieldName string, fieldId uint16) ([]string, e
 // GetString get the value of a field as character string.
 func (msg Message) GetString(fieldName string, fieldId uint16) (string, error) {
 	var _s *C.char
-	if status := C.tibrvMsg_GetStringEx(msg.tibrvMsg, C.CString(fieldName), &_s, C.ushort(fieldId)); status != C.TIBRV_OK {
+
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetStringEx(msg.tibrvMsg, _cFieldName, &_s, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return "", fmt.Errorf("GetString error, code: %d", status)
 	}
 
@@ -408,7 +495,11 @@ func (msg Message) GetString(fieldName string, fieldId uint16) (string, error) {
 
 func (msg Message) GetMsg(fieldName string, fieldId uint16) (*Message, error) {
 	var _msg C.tibrvMsg
-	if status := C.tibrvMsg_GetMsgEx(msg.tibrvMsg, C.CString(fieldName), &_msg, C.ushort(fieldId)); status != C.TIBRV_OK {
+
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetMsgEx(msg.tibrvMsg, _cFieldName, &_msg, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return nil, fmt.Errorf("GetMsg error, code: %d", status)
 	}
 
@@ -422,7 +513,10 @@ func (msg Message) GetOpaque(fieldName string, fieldId uint16) ([]byte, error) {
 	b := C.CBytes(make([]byte, 0))
 	var l C.tibrv_u32
 
-	if status := C.tibrvMsg_GetOpaqueEx(msg.tibrvMsg, C.CString(fieldName), &b, &l, C.ushort(fieldId)); status != C.TIBRV_OK {
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetOpaqueEx(msg.tibrvMsg, _cFieldName, &b, &l, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return nil, fmt.Errorf("GetClosure error, code: %d", status)
 	}
 
@@ -434,18 +528,24 @@ func (msg Message) GetXml(fieldName string, fieldId uint16) ([]byte, error) {
 	b := C.CBytes(make([]byte, 0))
 	var l C.tibrv_u32
 
-	if status := C.tibrvMsg_GetXmlEx(msg.tibrvMsg, C.CString(fieldName), &b, &l, C.ushort(fieldId)); status != C.TIBRV_OK {
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetXmlEx(msg.tibrvMsg, _cFieldName, &b, &l, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return nil, fmt.Errorf("GetXml error, code: %d", status)
 	}
 
 	return *(*[]byte)(b), nil
 }
 
-// GetDatatime gets the value of a field as a Rendezvous datetime value.
-func (msg Message) GetDatatime(fieldName string, fieldId uint16) (int64, error) {
+// GetDataTime gets the value of a field as a Rendezvous date time value.
+func (msg Message) GetDateTime(fieldName string, fieldId uint16) (int64, error) {
 	var t C.tibrvMsgDateTime
 
-	if status := C.tibrvMsg_GetDateTimeEx(msg.tibrvMsg, C.CString(fieldName), &t, C.ushort(fieldId)); status != C.TIBRV_OK {
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetDateTimeEx(msg.tibrvMsg, _cFieldName, &t, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return 0, fmt.Errorf("GetDateTime error, code: %d", status)
 	}
 
@@ -470,7 +570,10 @@ func (msg Message) GetFieldByIndex(fieldId uint16) (*MsgField, error) {
 func (msg Message) GetFieldInstance(fieldName string, instance uint32) (*MsgField, error) {
 	var _field C.tibrvMsgField
 
-	if status := C.tibrvMsg_GetFieldInstance(msg.tibrvMsg, C.CString(fieldName), &_field, C.uint(instance)); status != C.TIBRV_OK {
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_GetFieldInstance(msg.tibrvMsg, _cFieldName, &_field, C.uint(instance)); status != C.TIBRV_OK {
 		return nil, fmt.Errorf("GetFieldInstance error, code: %d", status)
 	}
 
@@ -505,7 +608,7 @@ func (msg Message) GetSendSubject() (string, error) {
 	var s *C.char
 
 	if status := C.tibrvMsg_GetSendSubject(msg.tibrvMsg, &s); status != C.TIBRV_OK {
-		return "", fmt.Errorf("GetSnendSubject error, code: %d", status)
+		return "", fmt.Errorf("GetSendSubject error, code: %d", status)
 	}
 
 	return C.GoString(s), nil
@@ -514,7 +617,7 @@ func (msg Message) GetSendSubject() (string, error) {
 // MarkReferences mark and clear references
 func (msg *Message) MarkReferences() error {
 	if status := C.tibrvMsg_MarkReferences(msg.tibrvMsg); status != C.TIBRV_OK {
-		return fmt.Errorf("MarkReferneces error, code: %d", status)
+		return fmt.Errorf("MarkReferences error, code: %d", status)
 	}
 
 	return nil
@@ -522,16 +625,22 @@ func (msg *Message) MarkReferences() error {
 
 // RemoveField remove a field from a message.
 func (msg *Message) RemoveField(fieldName string, fieldId uint16) error {
-	if status := C.tibrvMsg_RemoveFieldEx(msg.tibrvMsg, C.CString(fieldName), C.ushort(fieldId)); status != C.TIBRV_OK {
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_RemoveFieldEx(msg.tibrvMsg, _cFieldName, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return fmt.Errorf("RemoveField error, code: %d", status)
 	}
 
 	return nil
 }
 
-// RmoveFieldInstance remove a field instance of a field from a message.
+// RemoveFieldInstance remove a field instance of a field from a message.
 func (msg *Message) RemoveFieldInstance(fieldName string, instance uint32) error {
-	if status := C.tibrvMsg_RemoveFieldInstance(msg.tibrvMsg, C.CString(fieldName), C.uint(instance)); status != C.TIBRV_OK {
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_RemoveFieldInstance(msg.tibrvMsg, _cFieldName, C.uint(instance)); status != C.TIBRV_OK {
 		return fmt.Errorf("RemoveFieldInstance error, code: %d", status)
 	}
 
@@ -549,7 +658,10 @@ func (msg *Message) Reset() error {
 
 // 	SetReplySubject set the reply subject for a message.
 func (msg *Message) SetReplySubject(replySubject string) error {
-	if status := C.tibrvMsg_SetReplySubject(msg.tibrvMsg, C.CString(replySubject)); status != C.TIBRV_OK {
+	_cReplySubject := C.CString(replySubject)
+	defer C.free(unsafe.Pointer(_cReplySubject))
+
+	if status := C.tibrvMsg_SetReplySubject(msg.tibrvMsg, _cReplySubject); status != C.TIBRV_OK {
 		return fmt.Errorf("SetReplySubject error, code: %d", status)
 	}
 
@@ -558,7 +670,10 @@ func (msg *Message) SetReplySubject(replySubject string) error {
 
 // 	SetReplySubject set the reply subject for a message.
 func (msg *Message) SetSendSubject(sendSubject string) error {
-	if status := C.tibrvMsg_SetSendSubject(msg.tibrvMsg, C.CString(sendSubject)); status != C.TIBRV_OK {
+	_cSendSubject := C.CString(sendSubject)
+	defer C.free(unsafe.Pointer(_cSendSubject))
+
+	if status := C.tibrvMsg_SetSendSubject(msg.tibrvMsg, _cSendSubject); status != C.TIBRV_OK {
 		return fmt.Errorf("SetReplySubject error, code: %d", status)
 	}
 
@@ -577,13 +692,17 @@ func (msg *Message) UpdateField(field *MsgField) error {
 // UpdateBool
 func (msg *Message) UpdateBool(fieldName string, b bool, fieldId uint16) error {
 	var _b C.tibrv_bool
+
 	if b {
 		_b = C.TIBRV_TRUE
 	} else {
 		_b = C.TIBRV_FALSE
 	}
 
-	if status := C.tibrvMsg_UpdateBoolEx(msg.tibrvMsg, C.CString(fieldName), _b, C.ushort(fieldId)); status != C.TIBRV_OK {
+	_cFieldName := C.CString(fieldName)
+	defer C.free(unsafe.Pointer(_cFieldName))
+
+	if status := C.tibrvMsg_UpdateBoolEx(msg.tibrvMsg, _cFieldName, _b, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return fmt.Errorf("UpdateBool error, code: %d", status)
 	}
 
@@ -592,9 +711,61 @@ func (msg *Message) UpdateBool(fieldName string, b bool, fieldId uint16) error {
 
 // AddString add a field containing a string
 func (msg *Message) AddString(fieldName, value string, fieldId uint16) error {
-	if status := C.tibrvMsg_AddStringEx(msg.tibrvMsg, C.CString(fieldName), C.CString(value), C.ushort(fieldId)); status != C.TIBRV_OK {
+	_cFieldName := C.CString(fieldName)
+	_cValue := C.CString(value)
+
+	defer C.free(unsafe.Pointer(_cFieldName))
+	defer C.free(unsafe.Pointer(&_cValue))
+
+	if status := C.tibrvMsg_AddStringEx(msg.tibrvMsg, _cFieldName, _cValue, C.ushort(fieldId)); status != C.TIBRV_OK {
 		return fmt.Errorf("AddString error, code : %d", status)
 	}
 
 	return nil
+}
+
+func (msg *Message) GetCMSender() (string, error) {
+	var name *C.char
+
+	if status := C.tibrvMsg_GetCMSender(msg.tibrvMsg, &name); status != C.TIBRV_OK {
+		return "", fmt.Errorf("get cm sender error, %d", status)
+	}
+
+	return C.GoString(name), nil
+}
+
+func (msg *Message) GetCMSequence() (uint64, error) {
+	var n C.tibrv_u64
+
+	if status := C.tibrvMsg_GetCMSequence(msg.tibrvMsg, &n); status != C.TIBRV_OK {
+		return 0, fmt.Errorf("get cm sequence error, %d", status)
+	}
+
+	return uint64(n), nil
+}
+
+func (msg *Message) GetCMTimeLimit() (float64, error) {
+	var limit C.double
+
+	if status := C.tibrvMsg_GetCMTimeLimit(msg.tibrvMsg, &limit); status != C.TIBRV_OK {
+		return 0, fmt.Errorf("get cm time limit error, %d", status)
+	}
+
+	return float64(limit), nil
+}
+
+func (msg *Message) SetCMTimeLimit(limit float64) error {
+	if status := C.tibrvMsg_SetCMTimeLimit(msg.tibrvMsg, C.double(limit)); status != C.TIBRV_OK {
+		return fmt.Errorf("set cm time limit error, %d", status)
+	}
+
+	return nil
+}
+
+func TibrvBool(b bool) C.tibrv_bool {
+	if b {
+		return C.TIBRV_TRUE
+	}
+
+	return C.TIBRV_FALSE
 }

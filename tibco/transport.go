@@ -1,63 +1,66 @@
 package tibco
 
 /*
+#include <stdlib.h>
 #include "tibrv/tibrv.h"
-#include "tibrv/tport.h"
-#include "tibrv/types.h"
 */
 import "C"
 import (
 	"fmt"
+	"unsafe"
 )
 
 type Transport struct {
 	tibrvTransport C.tibrvTransport
 }
 
-func NewTransport() *Transport {
-	return &Transport{
-		tibrvTransport: 0,
-	}
-}
-
-func (transport *Transport) create(service, network string, daemon []string) error {
-	var _transport C.tibrvTransport
+func NewTransport(service, network string, daemon []string) (*Transport, error) {
+	var transport C.tibrvTransport
 	var err error
 
+	_cService := C.CString(service)
+	_cNetwork := C.CString(network)
+
 	for i := range daemon {
-		_transport, err = newTransport(
-			C.CString(service),
-			C.CString(network),
-			C.CString(daemon[i]),
+		_cDaemon := C.CString(daemon[i])
+
+		transport, err = newTransport(
+			_cService,
+			_cNetwork,
+			_cDaemon,
 		)
 		if err != nil {
+			C.free(unsafe.Pointer(_cDaemon))
+
 			continue
 		}
 
-		transport.tibrvTransport = _transport
+		C.free(unsafe.Pointer(_cDaemon))
 
-		return nil
+		return &Transport{
+			tibrvTransport: transport,
+		}, nil
 	}
 
 	if len(daemon) != 0 {
-		return fmt.Errorf("daemons cannot connect")
+		return nil, fmt.Errorf("daemons cannot connect")
 	}
 
-	_transport, err = newTransport(
-		C.CString(service),
-		C.CString(network),
+	transport, err = newTransport(
+		_cService,
+		_cNetwork,
 		nil,
 	)
 	if err != nil {
-		return fmt.Errorf("Create Transport error, %w", err)
+		return nil, fmt.Errorf("Create Transport error, %w", err)
 	}
 
-	transport.tibrvTransport = _transport
-
-	return nil
+	return &Transport{
+		tibrvTransport: transport,
+	}, nil
 }
 
-func (transport *Transport) destroy() error {
+func (transport *Transport) Destroy() error {
 	if status := C.tibrvTransport_Destroy(transport.tibrvTransport); status != C.TIBRV_OK {
 		return fmt.Errorf("Destroy transport error, code: %d", status)
 	}

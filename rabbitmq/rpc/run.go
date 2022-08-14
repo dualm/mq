@@ -4,14 +4,32 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dualm/common"
 	"github.com/dualm/mq"
 
 	"github.com/dualm/mq/rabbitmq"
 )
 
-func New(infoChan chan<- string, errChan chan<- error) mq.Mq {
+type rpc struct {
+	*RpcOption
+	requestChan chan mq.MqMessage
+	response    chan mq.MqResponse
+	infoChan    chan<- string
+	errChan     chan<- error
+}
+
+type RpcOption struct {
+	Username    string
+	Password    string
+	Host        string
+	Port        string
+	Queue       string
+	VHost       string
+	ClientQueue string
+}
+
+func New(opt *RpcOption, infoChan chan<- string, errChan chan<- error) mq.Mq {
 	return &rpc{
+		RpcOption:   opt,
 		requestChan: make(chan mq.MqMessage),
 		response:    make(chan mq.MqResponse),
 		infoChan:    infoChan,
@@ -19,46 +37,21 @@ func New(infoChan chan<- string, errChan chan<- error) mq.Mq {
 	}
 }
 
-type rpc struct {
-	requestChan chan mq.MqMessage
-	response    chan mq.MqResponse
-	infoChan    chan<- string
-	errChan     chan<- error
-}
-
-func (r *rpc) Run(ctx context.Context, initConfig mq.ConfigFunc, configId string, keys string) (map[string]string, error) {
-	conf, err := initConfig(configId)
-	if err != nil {
-		return nil, fmt.Errorf("rabbitmq/rpc init config error, Error: %w", err)
-	}
-
-	if conf == nil {
-		return nil, fmt.Errorf("rabbitmq/rpc nil config")
-	}
-
+func (r *rpc) Run(ctx context.Context) error {
 	url := fmt.Sprintf(
 		rabbitmq.URLFORMAT,
-		common.GetString(conf, keys, rabbitmq.RbtUsername),
-		common.GetString(conf, keys, rabbitmq.RbtPassword),
-		common.GetString(conf, keys, rabbitmq.RbtHost),
-		common.GetString(conf, keys, rabbitmq.RbtPort),
+		r.Username,
+		r.Password,
+		r.Host,
+		r.Port,
 	)
 
-	queue := common.GetString(conf, keys, rabbitmq.RbtQueue)
-	vhost := common.GetString(conf, keys, rabbitmq.RbtVHost)
-	clientQueue := common.GetString(conf, keys, rabbitmq.RbtClientQueue)
-
 	go func() {
-		publish(ctx, redial(ctx, url, queue, vhost, r.infoChan, r.errChan),
-			queue, clientQueue, r.requestChan, r.response, r.infoChan, r.errChan)
+		publish(ctx, redial(ctx, url, r.Queue, r.VHost, r.infoChan, r.errChan),
+			r.Queue, r.ClientQueue, r.requestChan, r.response, r.infoChan, r.errChan)
 	}()
 
-	return map[string]string{
-		"url":         url,
-		"VHost":       vhost,
-		"Queue":       queue,
-		"ClientQueue": clientQueue,
-	}, nil
+	return nil
 }
 
 func (r *rpc) Send(ctx context.Context, responseChan chan<- mq.MqResponse, msg []mq.MqMessage) <-chan struct{} {
