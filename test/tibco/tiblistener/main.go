@@ -43,7 +43,6 @@ func main() {
 			log.Println("error", err)
 		}
 	}
-
 }
 
 type callback struct {

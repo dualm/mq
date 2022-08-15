@@ -15,7 +15,7 @@ type TibrvQueueHook interface {
 	CallHook(Queue)
 }
 
-// export goQueueHook
+//export goQueueHook
 func goQueueHook(queue C.tibrvQueue, p unsafe.Pointer) {
 	callback := *(*TibrvQueueHook)(p)
 
