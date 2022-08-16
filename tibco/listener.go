@@ -1,5 +1,9 @@
 package tibco
 
+/*
+#include <stdio.h>
+*/
+import "C"
 import (
 	"errors"
 	"sync"

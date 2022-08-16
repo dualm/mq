@@ -1,6 +1,5 @@
 package tibco
 
-// #cgo LDFLAGS: -L${SRCDIR}/tibrv -ltibrvcm
 /*
 #include <stdlib.h>
 #include "tibrv/cm.h"
