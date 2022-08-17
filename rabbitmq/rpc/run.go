@@ -89,5 +89,6 @@ func (r *rpc) send(ctx context.Context, responseChan chan<- mq.MqResponse, msg [
 	}
 }
 
-func (r *rpc) Close(_ context.Context) {
+func (r *rpc) Close(_ context.Context) error {
+	return nil
 }

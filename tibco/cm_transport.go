@@ -44,7 +44,7 @@ func NewCmTransport(transport *Transport, cmName string, requestOld bool, ledger
 	}, nil
 }
 
-func (t *CmTransport) Destroy() error {
+func (t *CmTransport) Close() error {
 	if status := C.tibrvcmTransport_Destroy(t.tibrvCmTransport); status != C.TIBRV_OK {
 		return fmt.Errorf("destroy transport error, %d", status)
 	}

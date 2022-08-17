@@ -62,7 +62,7 @@ func NewListener(queue *Queue, transport *Transport, subject string, callback Ti
 	}, nil
 }
 
-func (e *Event) Destroy() error {
+func (e *Event) Close() error {
 	if status := C.tibrvEvent_DestroyEx(e.tibrvEvent, nil); status != C.TIBRV_OK {
 		return fmt.Errorf("event destroy error, %d", status)
 	}

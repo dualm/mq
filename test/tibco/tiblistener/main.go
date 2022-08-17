@@ -25,7 +25,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer tib.Destroy()
 
 	tib.Listen("a", nil, new(callback))
 	tib.Listen("b", nil, new(callback))
@@ -36,6 +35,8 @@ func main() {
 	for {
 		select {
 		case <-sigChan:
+			log.Println(tib.Close())
+
 			return
 		case info := <-infoC:
 			log.Println("info", info)
@@ -53,7 +54,7 @@ func (c *callback) CallBack(event tibco.Event, msg tibco.Message) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer msg.Destroy()
+	defer msg.Close()
 
 	log.Println(re)
 }

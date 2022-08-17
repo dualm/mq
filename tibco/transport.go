@@ -66,7 +66,7 @@ func NewTransport(service, network string, daemon []string) (*Transport, error) 
 	}, nil
 }
 
-func (transport *Transport) Destroy() error {
+func (transport *Transport) Close() error {
 	if status := C.tibrvTransport_Destroy(transport.tibrvTransport); status != C.TIBRV_OK {
 		return fmt.Errorf("Destroy transport error, code: %d", status)
 	}

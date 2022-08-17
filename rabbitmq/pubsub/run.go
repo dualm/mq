@@ -111,5 +111,6 @@ func (ps *pubSub) sendRequest(ctx context.Context, msg mq.MqMessage, rsp chan<- 
 	}
 }
 
-func (ps *pubSub) Close(_ context.Context) {
+func (ps *pubSub) Close(_ context.Context) error {
+	return nil
 }

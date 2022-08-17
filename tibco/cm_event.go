@@ -57,7 +57,7 @@ func NewCmListener(queue *Queue, transport *CmTransport, subject string, p Tibrv
 	}, nil
 }
 
-func (e *CmEvent) Destroy(cancelAgreements bool) error {
+func (e *CmEvent) Close(cancelAgreements bool) error {
 	var _cCancelAgreements C.tibrv_bool
 	if cancelAgreements {
 		_cCancelAgreements = C.TIBRV_TRUE

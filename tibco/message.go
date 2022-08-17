@@ -41,7 +41,7 @@ func (msg *Message) CopyCreate(m Message) error {
 	return nil
 }
 
-func (msg *Message) Destroy() error {
+func (msg *Message) Close() error {
 	if status := C.tibrvMsg_Destroy(msg.tibrvMsg); status != C.TIBRV_OK {
 		return fmt.Errorf("Destroy message error, code: %d", status)
 	}
@@ -660,7 +660,7 @@ func (msg *Message) Reset() error {
 	return nil
 }
 
-// 	SetReplySubject set the reply subject for a message.
+// SetReplySubject set the reply subject for a message.
 func (msg *Message) SetReplySubject(replySubject string) error {
 	_cReplySubject := C.CString(replySubject)
 	defer C.free(unsafe.Pointer(_cReplySubject))
@@ -672,7 +672,7 @@ func (msg *Message) SetReplySubject(replySubject string) error {
 	return nil
 }
 
-// 	SetReplySubject set the reply subject for a message.
+// SetReplySubject set the reply subject for a message.
 func (msg *Message) SetSendSubject(sendSubject string) error {
 	_cSendSubject := C.CString(sendSubject)
 	defer C.free(unsafe.Pointer(_cSendSubject))

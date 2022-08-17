@@ -221,11 +221,18 @@ func (t *TibSender) SendEvents(ctx context.Context, responseChan chan<- mq.MqRes
 	return c
 }
 
-func (t *TibSender) Close(ctx context.Context) {
-	t.message.Destroy()
-	t.transport.Destroy()
+func (t *TibSender) Close(ctx context.Context) error {
+	err := t.message.Close()
+	if err != nil {
+		return err
+	}
 
-	tibrvClose()
+	err = t.transport.Close()
+	if err != nil {
+		return err
+	}
+
+	return tibrvClose()
 }
 
 func (t *TibSender) send() error {
@@ -245,7 +252,7 @@ func (t *TibSender) sendRequest(ctx context.Context) (string, error) {
 		}
 
 		defer func() {
-			_re.Destroy()
+			_re.Close()
 		}()
 
 		s, err := _re.GetString(t.FieldName, 0)

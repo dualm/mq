@@ -27,7 +27,12 @@ func main() {
 	if err := tib.Run(ctx); err != nil {
 		log.Fatal(err)
 	}
-	defer tib.Close(ctx)
+	defer func() {
+		err := tib.Close(ctx)
+		if err != nil {
+			log.Println(err)
+		}
+	}()
 
 	transport, err := tibco.NewTransport("", "", []string{})
 	if err != nil {
@@ -44,7 +49,7 @@ func main() {
 
 		msg.SetSendSubject("a")
 
-		if err = msg.AddString("Message", strconv.Itoa(i), 0);err != nil {
+		if err = msg.AddString("Message", strconv.Itoa(i), 0); err != nil {
 			log.Fatal(err)
 		}
 
@@ -52,4 +57,5 @@ func main() {
 	}
 
 	transport.Sendv(msgs)
+
 }

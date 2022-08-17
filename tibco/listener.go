@@ -53,23 +53,22 @@ func NewTibListener(opt *TibOption, infoChan chan<- string, errChan chan<- error
 	return listener, nil
 }
 
-func (l *TibListener) Destroy() {
-	l.lock.Lock()
-	defer l.lock.Unlock()
-
-	if err := l.transport.Destroy(); err != nil {
-		l.errChan <- err
+func (l *TibListener) Close() error {
+	if err := l.transport.Close(); err != nil {
+		return err
 	}
 
 	for i := range l.events {
-		if err := l.events[i].Destroy(); err != nil {
-			l.errChan <- err
+		if err := l.events[i].Close(); err != nil {
+			return err
 		}
 	}
 
 	if err := tibrvClose(); err != nil {
-		l.errChan <- err
+		return err
 	}
+
+	return nil
 }
 
 func (l *TibListener) Listen(subjectName string, transport *Transport, cb TibrvEventCallback) error {

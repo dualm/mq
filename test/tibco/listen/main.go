@@ -34,16 +34,19 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer transport.Close()
 
 	listener, err := tibco.NewListener(nil, transport, "a", new(callback))
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer listener.Close()
 
-	_, err = tibco.NewListener(nil, transport, "b", new(callback))
+	listener1, err := tibco.NewListener(nil, transport, "b", new(callback))
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer listener1.Close()
 
 	q, err := listener.GetQueue()
 	if err != nil {
@@ -76,7 +79,7 @@ func (c *callback) CallBack(event tibco.Event, msg tibco.Message) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer msg.Destroy()
+	defer msg.Close()
 
 	reC <- re
 }

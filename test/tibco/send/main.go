@@ -29,7 +29,6 @@ func main() {
 	if err := tib.Run(ctx); err != nil {
 		log.Fatal(err)
 	}
-	defer tib.Close(ctx)
 
 	// async
 	go func() {

@@ -39,7 +39,7 @@ func NewQueue() (*Queue, error) {
 	}, nil
 }
 
-func (q *Queue) Destroy() error {
+func (q *Queue) Close() error {
 	if status := C.tibrvQueue_DestroyEx(q.tibrvQueue, nil, nil); status != C.TIBRV_OK {
 		return fmt.Errorf("destroy queue error, %d", status)
 	}

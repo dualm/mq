@@ -37,7 +37,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer cmTransport.Destroy()
+	defer cmTransport.Close()
 
 	cmListener, err := tibco.NewCmListener(nil, cmTransport, "a", new(callback))
 	if err != nil {

@@ -23,5 +23,5 @@ type Mq interface {
 	// Run, configID为配置文件的文件名称，keys为各层节点
 	Run(ctx context.Context) error
 	Send(ctx context.Context, responseChan chan<- MqResponse, msg []MqMessage) <-chan struct{}
-	Close(ctx context.Context)
+	Close(ctx context.Context) error
 }
