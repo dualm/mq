@@ -28,14 +28,14 @@ func main() {
 	}
 
 	option := pubsub.PubSubOption{
-		User:           config.GetString("MES-PRD.Username"),
-		Password:       config.GetString("MES-PRD.Password"),
-		Host:           config.GetString("MES-PRD.Host"),
-		Port:           config.GetString("MES-PRD.Port"),
-		Vhost:          config.GetString("MES-PRD.Vhost"),
-		TargetExchange: config.GetString("MES-PRD.TargetExchange"),
-		RoutingKey:     config.GetString("MES-PRD.TargetRoutingKey"),
-		RspQueue:       config.GetString("MES-PRD.EapQueue"),
+		User:           config.GetString("MES-DEV.Username"),
+		Password:       config.GetString("MES-DEV.Password"),
+		Host:           config.GetString("MES-DEV.Host"),
+		Port:           config.GetString("MES-DEV.Port"),
+		Vhost:          config.GetString("MES-DEV.Vhost"),
+		TargetExchange: config.GetString("MES-DEV.TargetExchange"),
+		RoutingKey:     config.GetString("MES-DEV.TargetRoutingKey"),
+		RspQueue:       config.GetString("MES-DEV.EapQueue"),
 	}
 
 	pb := pubsub.New(&option, infoChan, errChan)
@@ -255,7 +255,16 @@ func main() {
 
 	// }()
 
-	infoReq := NewPieceInfoDownloadReq("OFFLINEFILE", "ZLFMM", "B4AB013B7M030S004", "")
+	// infoReq := NewPieceInfoDownloadReq("Z1TDIM01", "ZLFMM", "ACAB011B1E010S003P1", "Z0179")
+
+	// re, err := SendToMes(pb, infoReq)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// log.Println(string(re))
+
+	infoReq := NewSheetInfoDownloadReq("Z1EINK01-INK", "ZLFMM", "Z1LC001")
 
 	re, err := SendToMes(pb, infoReq)
 	if err != nil {
@@ -263,6 +272,24 @@ func main() {
 	}
 
 	log.Println(string(re))
+
+	// infoReq := NewRollInfoDownloadReq("Z1PPRE01-PRE", "ZLFMM", "R059")
+
+	// re, err := SendToMes(pb, infoReq)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// log.Println(string(re))
+
+	// infoReq := NewSmallRollInfoDownloadReq("OFFLINEFILE", "ZLFMM", "R001")
+
+	// re, err := SendToMes(pb, infoReq)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// log.Println(string(re))
 
 	// infoReq := NewSheetInfoDownloadReq("OFFLINEFILE", "ZLFMM", "B4AB011B6N020S004")
 
@@ -494,6 +521,7 @@ type PieceInfoDownloadRequest struct {
 	Location             string   `xml:"Body>LOCATION"`
 	Result               string   `xml:"Body>RESULT"`
 	ResultDescription    string   `xml:"Body>RESULTDESCRIPTION"`
+	CheckInCode          string   `xml:"Body>CHECKINCODE"`
 	ReturnCode           string   `xml:"Return>RETURNCODE"`
 	ReturnMessage        string   `xml:"Return>RETURNMESSAGE"`
 }
@@ -573,6 +601,7 @@ type SheetInfoDownloadRequest struct {
 	Location             string          `xml:"Body>LOCATION"`
 	Result               string          `xml:"Body>RESULT"`
 	ResultDescription    string          `xml:"Body>RESULTDESCRIPTION"`
+	CheckInCode          string          `xml:"Body>CHECKINCODE"`
 	PieceList            []ExteriorPiece `xml:"Body>PIECELIST>PIECE"`
 	ReturnCode           string          `xml:"Return>RETURNCODE"`
 	ReturnMessage        string          `xml:"Return>RETURNMESSAGE"`
@@ -597,7 +626,131 @@ func NewSheetInfoDownloadReq(machineName, factoryName, sheetName string) mq.MqMe
 	req := SheetInfoDownloadRequest{
 		Header:               header,
 		MachineName:          machineName,
-		LotName:              sheetName,
+		LotName:              "",
+		ProductType:          "",
+		CarrierName:          sheetName,
+		ProcessOperationName: "",
+		ProductSpecName:      "",
+		ProductRequestName:   "",
+		ProductionType:       "",
+		ProcessFlowName:      "",
+		MachineRecipeName:    "",
+		LotJudge:             "",
+		LotGrade:             "",
+		Length:               "",
+		Location:             "",
+		Result:               "",
+		ResultDescription:    "",
+		ReturnCode:           "",
+		ReturnMessage:        "",
+	}
+
+	return mq.MqMessage{
+		Msg:           req.MarshalByte(),
+		CorrelationID: id,
+		IsEvent:       false,
+	}
+}
+
+type RollInfoDownloadRequest struct {
+	XMLName              xml.Name `xml:"Message"`
+	Header               Header   `xml:"Header"`
+	MachineName          string   `xml:"Body>MACHINENAME"`
+	LotName              string   `xml:"Body>LOTNAME"`
+	ProductType          string   `xml:"Body>PRODUCTTYPE"`
+	CarrierName          string   `xml:"Body>CARRIERNAME"`
+	ProcessOperationName string   `xml:"Body>PROCESSOPERATIONNAME"`
+	ProductSpecName      string   `xml:"Body>PRODUCTSPECNAME"`
+	ProductRequestName   string   `xml:"Body>PRODUCTREQUESTNAME"`
+	ProductionType       string   `xml:"Body>PRODUCTIONTYPE"`
+	ProcessFlowName      string   `xml:"Body>PROCESSFLOWNAME"`
+	MachineRecipeName    string   `xml:"Body>MACHINERECIPENAME"`
+	LotJudge             string   `xml:"Body>LOTJUDGE"`
+	LotGrade             string   `xml:"Body>LOTGRADE"`
+	Length               string   `xml:"Body>LENGTH"`
+	Location             string   `xml:"Body>LOCATION"`
+	Result               string   `xml:"Body>RESULT"`
+	ResultDescription    string   `xml:"Body>RESULTDESCRIPTION"`
+	CheckInCode          string   `xml:"Body>CHECKINCODE"`
+	ReturnCode           string   `xml:"Return>RETURNCODE"`
+	ReturnMessage        string   `xml:"Return>RETURNMESSAGE"`
+}
+
+func (req *RollInfoDownloadRequest) MarshalByte() []byte {
+	return MarshalByte(req)
+}
+
+func NewRollInfoDownloadReq(machineName, factoryName, rollName string) mq.MqMessage {
+	messageName := "RollInfoDownloadRequest"
+
+	header, id := NewHeader(messageName, machineName, factoryName)
+
+	req := RollInfoDownloadRequest{
+		Header:               header,
+		MachineName:          machineName,
+		LotName:              "",
+		ProductType:          "",
+		CarrierName:          rollName,
+		ProcessOperationName: "",
+		ProductSpecName:      "",
+		ProductRequestName:   "",
+		ProductionType:       "",
+		ProcessFlowName:      "",
+		MachineRecipeName:    "",
+		LotJudge:             "",
+		LotGrade:             "",
+		Length:               "",
+		Location:             "",
+		Result:               "",
+		ResultDescription:    "",
+		ReturnCode:           "",
+		ReturnMessage:        "",
+	}
+
+	return mq.MqMessage{
+		Msg:           req.MarshalByte(),
+		CorrelationID: id,
+		IsEvent:       false,
+	}
+}
+
+type SmallRollInfoDownloadRequest struct {
+	XMLName              xml.Name `xml:"Message"`
+	Header               Header   `xml:"Header"`
+	MachineName          string   `xml:"Body>MACHINENAME"`
+	LotName              string   `xml:"Body>LOTNAME"`
+	ProductType          string   `xml:"Body>PRODUCTTYPE"`
+	CarrierName          string   `xml:"Body>CARRIERNAME"`
+	ProcessOperationName string   `xml:"Body>PROCESSOPERATIONNAME"`
+	ProductSpecName      string   `xml:"Body>PRODUCTSPECNAME"`
+	ProductRequestName   string   `xml:"Body>PRODUCTREQUESTNAME"`
+	ProductionType       string   `xml:"Body>PRODUCTIONTYPE"`
+	ProcessFlowName      string   `xml:"Body>PROCESSFLOWNAME"`
+	MachineRecipeName    string   `xml:"Body>MACHINERECIPENAME"`
+	LotJudge             string   `xml:"Body>LOTJUDGE"`
+	LotGrade             string   `xml:"Body>LOTGRADE"`
+	Length               string   `xml:"Body>LENGTH"`
+	Location             string   `xml:"Body>LOCATION"`
+	Result               string   `xml:"Body>RESULT"`
+	ResultDescription    string   `xml:"Body>RESULTDESCRIPTION"`
+	CheckInCode          string   `xml:"Body>CHECKINCODE"`
+	ReturnCode           string   `xml:"Return>RETURNCODE"`
+	ReturnMessage        string   `xml:"Return>RETURNMESSAGE"`
+}
+
+func (req *SmallRollInfoDownloadRequest) MarshalByte() []byte {
+	return MarshalByte(req)
+}
+
+func NewSmallRollInfoDownloadReq(machineName, factoryName, smallRollName string) mq.MqMessage {
+	messageName := "SmallRollInfoDownloadRequest"
+
+	header, id := NewHeader(messageName, machineName, factoryName)
+
+	req := SmallRollInfoDownloadRequest{
+		Header:               header,
+		MachineName:          machineName,
+		LotName:              smallRollName,
 		ProductType:          "",
 		CarrierName:          "",
 		ProcessOperationName: "",
