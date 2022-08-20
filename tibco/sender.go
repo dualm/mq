@@ -85,6 +85,7 @@ func (t *TibSender) Run(ctx context.Context) error {
 	return nil
 }
 
+// deprecated
 func (t *TibSender) Send(ctx context.Context, responseChan chan<- mq.MqResponse, msg []mq.MqMessage) <-chan struct{} {
 	c := make(chan struct{})
 
@@ -156,6 +157,7 @@ func (t *TibSender) Send(ctx context.Context, responseChan chan<- mq.MqResponse,
 	return c
 }
 
+// deprecated
 func (t *TibSender) SendEvents(ctx context.Context, responseChan chan<- mq.MqResponse, msg []mq.MqMessage, targetSubjectName string) <-chan struct{} {
 	c := make(chan struct{})
 
@@ -236,6 +238,29 @@ func (t *TibSender) Close(ctx context.Context) error {
 }
 
 func (t *TibSender) send() error {
+	return t.transport.Send(t.message)
+}
+
+// SendRequest, 发送消息并在最长timeOut秒内返回。返回时间等于timeOut时报错消息超时
+func (t *TibSender) SendRequest(msg string, timeOut float64) (*Message, error) {
+	err := t.makeMsg(t.TargetSubjectName, t.FieldName, msg)
+	if err != nil {
+		return nil, err
+	}
+
+	return t.transport.sendRequest(t.message, timeOut)
+}
+
+// SendReport, 发送消息
+func (t *TibSender) SendReport(msg string) error {
+	err := t.makeMsg(t.TargetSubjectName, t.FieldName, msg)
+	if err != nil {
+		return err
+	}
+
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
 	return t.transport.Send(t.message)
 }
 

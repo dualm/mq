@@ -73,5 +73,13 @@ func main() {
 		}
 	}()
 
+	go func() {
+		for {
+			tib.SendReport("aaaa")
+
+			time.Sleep(time.Second)
+		}
+	}()
+
 	<-ctx.Done()
 }

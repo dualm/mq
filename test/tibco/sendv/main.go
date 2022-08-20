@@ -57,5 +57,4 @@ func main() {
 	}
 
 	transport.Sendv(msgs)
-
 }
