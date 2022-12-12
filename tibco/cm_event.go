@@ -21,7 +21,7 @@ func goCmCallback(cmListener C.tibrvcmEvent, message C.tibrvMsg, p unsafe.Pointe
 
 	cmCallBack.CmCallBack(
 		CmEvent{
-			tibrvcmEvent: cmListener,
+			tibrvCmEvent: cmListener,
 		},
 		Message{
 			tibrvMsg: message,
@@ -30,7 +30,7 @@ func goCmCallback(cmListener C.tibrvcmEvent, message C.tibrvMsg, p unsafe.Pointe
 }
 
 type CmEvent struct {
-	tibrvcmEvent C.tibrvcmEvent
+	tibrvCmEvent C.tibrvcmEvent
 }
 
 func NewCmListener(queue *Queue, transport *CmTransport, subject string, p TibrvCmEventCallback) (*CmEvent, error) {
@@ -53,7 +53,7 @@ func NewCmListener(queue *Queue, transport *CmTransport, subject string, p Tibrv
 	}
 
 	return &CmEvent{
-		tibrvcmEvent: event,
+		tibrvCmEvent: event,
 	}, nil
 }
 
@@ -65,16 +65,16 @@ func (e *CmEvent) Close(cancelAgreements bool) error {
 		_cCancelAgreements = C.TIBRV_FALSE
 	}
 
-	if status := C.tibrvcmEvent_DestroyEx(e.tibrvcmEvent, _cCancelAgreements, nil); status != C.TIBRV_OK {
-		return fmt.Errorf("close event error, %d", status)
+	if status := C.tibrvcmEvent_DestroyEx(e.tibrvCmEvent, _cCancelAgreements, nil); status != C.TIBRV_OK {
+		return fmt.Errorf("close cmevent error, %d", status)
 	}
 
 	return nil
 }
 
-// ConfirmMsg, 显式地对一个消息的接收进行确认。仅用于重写了默认的自动确认函数的场景.
+// ConfirmMsg 显式地对一个消息的接收进行确认。仅用于重写了默认的自动确认函数的场景.
 func (e *CmEvent) ConfirmMsg(msg C.tibrvMsg) error {
-	if status := C.tibrvcmEvent_ConfirmMsg(e.tibrvcmEvent, msg); status != C.TIBRV_OK {
+	if status := C.tibrvcmEvent_ConfirmMsg(e.tibrvCmEvent, msg); status != C.TIBRV_OK {
 		return fmt.Errorf("confirm event error, %d", status)
 	}
 
@@ -84,7 +84,7 @@ func (e *CmEvent) ConfirmMsg(msg C.tibrvMsg) error {
 func (e *CmEvent) GetListenerSubject() (string, error) {
 	var subject *C.char
 
-	if status := C.tibrvcmEvent_GetListenerSubject(e.tibrvcmEvent, &subject); status != C.TIBRV_OK {
+	if status := C.tibrvcmEvent_GetListenerSubject(e.tibrvCmEvent, &subject); status != C.TIBRV_OK {
 		return "", fmt.Errorf("get listener subject error, %d", status)
 	}
 
@@ -94,8 +94,8 @@ func (e *CmEvent) GetListenerSubject() (string, error) {
 func (e *CmEvent) GetListenerTransport() (*CmTransport, error) {
 	var transport C.tibrvcmTransport
 
-	if status := C.tibrvcmEvent_GetListenerTransport(e.tibrvcmEvent, &transport); status != C.TIBRV_OK {
-		return nil, fmt.Errorf("get listener transport error, %d", status)
+	if status := C.tibrvcmEvent_GetListenerTransport(e.tibrvCmEvent, &transport); status != C.TIBRV_OK {
+		return nil, fmt.Errorf("get listener cmTransport error, %d", status)
 	}
 
 	return &CmTransport{
@@ -106,7 +106,7 @@ func (e *CmEvent) GetListenerTransport() (*CmTransport, error) {
 func (e *CmEvent) GetQueue() (*Queue, error) {
 	var queue C.tibrvQueue
 
-	if status := C.tibrvcmEvent_GetQueue(e.tibrvcmEvent, &queue); status != C.TIBRV_OK {
+	if status := C.tibrvcmEvent_GetQueue(e.tibrvCmEvent, &queue); status != C.TIBRV_OK {
 		return nil, fmt.Errorf("get queue error, %d", status)
 	}
 
@@ -114,7 +114,7 @@ func (e *CmEvent) GetQueue() (*Queue, error) {
 }
 
 func (e *CmEvent) SetExplicitConfirm() error {
-	if status := C.tibrvcmEvent_SetExplicitConfirm(e.tibrvcmEvent); status != C.TIBRV_OK {
+	if status := C.tibrvcmEvent_SetExplicitConfirm(e.tibrvCmEvent); status != C.TIBRV_OK {
 		return fmt.Errorf("confirm message error, %d", status)
 	}
 

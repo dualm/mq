@@ -1,72 +1,47 @@
 package main
 
 import (
-	"context"
 	"log"
+	"os"
+	"os/signal"
 
 	"github.com/dualm/mq/tibco"
 )
 
-var reC = make(chan string, 1)
-
 func main() {
 	opt := tibco.TibOption{
-		FieldName: "",
-		Service:   "",
-		Network:   "",
-		Daemon:    []string{},
+		FieldName:         "DATA",
+		Service:           "",
+		Network:           "",
+		Daemon:            []string{},
+		TargetSubjectName: "",
+		SourceSubjectName: "",
+		PooledMessage:     false,
 	}
 
-	infoC := make(chan string)
-	errC := make(chan error)
-
-	tib := tibco.NewTibSender(&opt, infoC, errC)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	if err := tib.Run(ctx); err != nil {
-		log.Fatal(err)
-	}
-	defer tib.Close(ctx)
-
-	transport, err := tibco.NewTransport("", "", []string{})
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer transport.Close()
-
-	listener, err := tibco.NewListener(nil, transport, "a", new(callback))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer listener.Close()
-
-	listener1, err := tibco.NewListener(nil, transport, "b", new(callback))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer listener1.Close()
-
-	q, err := listener.GetQueue()
+	infoC := make(chan string, 1)
+	errC := make(chan error, 1)
+	tib, err := tibco.NewTibListener(&opt, infoC, errC)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	go func() {
-		for {
-			q.Dispatch()
-		}
-	}()
+	_ = tib.Listen("a", new(callback))
+	_ = tib.Listen("b", new(callback))
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt)
 
 	for {
 		select {
+		case <-sigChan:
+			log.Println(tib.Close())
+
+			return
 		case info := <-infoC:
 			log.Println("info", info)
 		case err := <-errC:
 			log.Println("error", err)
-		case re := <-reC:
-			log.Println(re)
 		}
 	}
 }
@@ -79,7 +54,9 @@ func (c *callback) CallBack(event tibco.Event, msg tibco.Message) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer msg.Close()
+	defer func() {
+		_ = msg.Close()
+	}()
 
-	reC <- re
+	log.Println(re)
 }

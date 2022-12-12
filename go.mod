@@ -3,10 +3,9 @@ module github.com/dualm/mq
 go 1.18
 
 require (
-	github.com/dualm/common v0.1.9
-	github.com/dualm/zispc v0.0.9
-	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/rabbitmq/amqp091-go v1.3.4
+	github.com/BurntSushi/toml v0.3.1
+	github.com/google/uuid v1.1.2
+	github.com/rabbitmq/amqp091-go v1.5.0
 	github.com/spf13/viper v1.11.0
 )
 
@@ -22,7 +21,6 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
-	github.com/ugorji/go/codec v1.2.7 // indirect
 	golang.org/x/sys v0.0.0-20220422013727-9388b58f7150 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/ini.v1 v1.66.4 // indirect

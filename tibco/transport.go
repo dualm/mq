@@ -17,18 +17,18 @@ type Transport struct {
 	tibrvTransport C.tibrvTransport
 }
 
-func NewTransport(service, network string, daemon []string) (*Transport, error) {
+func NewTransport(opt *TibOption) (*Transport, error) {
 	var transport C.tibrvTransport
 	var err error
 
-	_cService := C.CString(service)
-	_cNetwork := C.CString(network)
+	_cService := C.CString(opt.Service)
+	_cNetwork := C.CString(opt.Network)
 
 	defer C.free(unsafe.Pointer(_cService))
 	defer C.free(unsafe.Pointer(_cNetwork))
 
-	for i := range daemon {
-		_cDaemon := C.CString(daemon[i])
+	for i := range opt.Daemon {
+		_cDaemon := C.CString(opt.Daemon[i])
 
 		transport, err = newTransport(
 			_cService,
@@ -48,7 +48,7 @@ func NewTransport(service, network string, daemon []string) (*Transport, error) 
 		}, nil
 	}
 
-	if len(daemon) != 0 {
+	if len(opt.Daemon) != 0 {
 		return nil, fmt.Errorf("daemons cannot connect")
 	}
 
@@ -68,7 +68,7 @@ func NewTransport(service, network string, daemon []string) (*Transport, error) 
 
 func (transport *Transport) Close() error {
 	if status := C.tibrvTransport_Destroy(transport.tibrvTransport); status != C.TIBRV_OK {
-		return fmt.Errorf("Destroy transport error, code: %d", status)
+		return fmt.Errorf("Destroy cmTransport error, code: %d", status)
 	}
 
 	return nil
@@ -83,7 +83,7 @@ func newTransport(service, network, daemon *C.char) (C.tibrvTransport, error) {
 		network,
 		daemon,
 	); status != C.TIBRV_OK {
-		return 0, fmt.Errorf("Tibco create transport error, code: %d", status)
+		return 0, fmt.Errorf("Tibco create cmTransport error, code: %d", status)
 	}
 
 	return transport, nil

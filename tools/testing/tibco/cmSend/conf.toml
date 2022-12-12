@@ -1,0 +1,60 @@
+Listener=""
+[Option]
+LedgerName = "Ledger"
+RequestOld = true
+SyncLedger = true
+RelayAgent = ""
+LimitTime = 0.0
+FieldName = "DATA"
+Service = "17003"
+Network = ""
+Daemon = ["tcp:10.55.102.60:7500"]
+TargetSubjectName = "MES.DEV.G_EMIP.CM"
+PooledMessage = true
+CmName = "cmTesting"
+[[Reports]]
+[[Reports.Fields]]
+FieldName="CtFlags/"
+Type="i32"
+Message="1
+[[Reports.Fields]]
+FieldName="Class/"
+Type="i16"
+Message="1"
+[[Reports.Fields]]
+FieldName="Type/"
+Type="i16"
+Message="1"
+[[Reports.Fields]]
+FieldName="SrcGrp/"
+Type="i16"
+Message="1"
+[[Reports.Fields]]
+FieldName="SrcPrc/"
+Type="i16"
+Message="1"
+[[Reports.Fields]]
+FieldName="DstGrp/"
+Type="i16"
+Message="1"
+[[Reports.Fields]]
+FieldName="DstPrc/"
+Type="i16"
+Message="1"
+[[Reports.Fields]]
+FieldName="MsgId/"
+Type="i16"
+Message="1"
+[[Reports.Fields]]
+FieldName="SendTime/"
+Type="string"
+Message="20220102105014"
+[[Reports.Fields]]
+FieldName="UserId/"
+Type="string"
+Message="20220102105014"
+[[Reports.Fields]]
+FieldName="Data/"
+Type="string"
+Message="Hello world"
+#[[Requests]]

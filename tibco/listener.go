@@ -16,7 +16,7 @@ type TibListener struct {
 	errChan     chan<- error
 	transport   *Transport
 	events      []*Event
-	messagePool sync.Pool
+	messagePool *sync.Pool
 }
 
 func NewTibListener(opt *TibOption, infoChan chan<- string, errChan chan<- error) (*TibListener, error) {
@@ -24,7 +24,7 @@ func NewTibListener(opt *TibOption, infoChan chan<- string, errChan chan<- error
 		return nil, err
 	}
 
-	transport, err := NewTransport(opt.Service, opt.Network, opt.Daemon)
+	transport, err := NewTransport(opt)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +36,7 @@ func NewTibListener(opt *TibOption, infoChan chan<- string, errChan chan<- error
 		errChan:   errChan,
 		transport: transport,
 		events:    make([]*Event, 0),
-		messagePool: sync.Pool{
+		messagePool: &sync.Pool{
 			New: func() any {
 				msg, err := NewMessage()
 				if err != nil {
@@ -71,22 +71,15 @@ func (l *TibListener) Close() error {
 	return nil
 }
 
-func (l *TibListener) Listen(subjectName string, transport *Transport, cb TibrvEventCallback) error {
+func (l *TibListener) Listen(subjectName string, cb TibrvEventCallback) error {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 
-	var t *Transport
-
-	if transport == nil {
-		if l.transport == nil {
-			return errors.New("all transports are nil")
-		}
-		t = l.transport
-	} else {
-		t = transport
+	if l.transport == nil {
+		return errors.New("all transports are nil")
 	}
 
-	listener, err := NewListener(nil, t, subjectName, cb)
+	listener, err := NewListener(nil, l.transport, subjectName, cb)
 	if err != nil {
 		return err
 	}

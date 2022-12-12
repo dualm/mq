@@ -1,22 +1,17 @@
 package main
 
 import (
-	"context"
 	"encoding/xml"
 	"fmt"
 	"log"
 	"time"
 
-	"github.com/dualm/mq"
 	"github.com/dualm/mq/tibco"
 
 	"github.com/spf13/viper"
 )
 
 func main() {
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-	defer cancel()
-
 	infoChan := make(chan string)
 	errChan := make(chan error)
 	config, err := InitConfig("config")
@@ -34,44 +29,16 @@ func main() {
 
 	tib := tibco.NewTibSender(&opt, infoChan, errChan)
 
-	if err := tib.Run(ctx); err != nil {
+	if err := tib.Run(); err != nil {
 		log.Fatal(err)
 	}
 
-	rspChan := make(chan mq.MqResponse)
-
-	// req, err := NewRecipeValidationRequest("ACAB661B15010S001", "TEST01", []Parameter{
-	// 	{
-	// 		ItemName:  "P01",
-	// 		ItemValue: "1",
-	// 	}, {
-	// 		ItemName:  "P02",
-	// 		ItemValue: "2",
-	// 	},
-	// })
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// log.Println(string(req[0].Msg))
-
-	tib.Send(
-		ctx,
-		rspChan,
-		[]mq.MqMessage{
-			{
-				Msg:     []byte(spcMessage),
-				IsEvent: true,
-			},
-		},
-	)
-
-	result := <-rspChan
-	if err := result.Err; err != nil {
+	re, err := tib.SendRequest(spcMessage, 20)
+	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Println(result)
+	log.Println(re)
 }
 
 type RecipeValidationRequest struct {
@@ -140,7 +107,7 @@ type Parameter struct {
 	ItemValue string   `xml:"ITEMVALUE"`
 }
 
-func NewRecipeValidationRequest(lotName, recipeName string, parameters []Parameter) ([]mq.MqMessage, error) {
+func NewRecipeValidationRequest(lotName, recipeName string, parameters []Parameter) ([]tibco.MqMessage, error) {
 	header := NewHeader("RecipeParameterValidationRequest")
 	_rcpReq := RecipeValidationRequest{
 		Header:        header,
@@ -151,7 +118,7 @@ func NewRecipeValidationRequest(lotName, recipeName string, parameters []Paramet
 		ParameterList: parameters,
 	}
 
-	return []mq.MqMessage{
+	return []tibco.MqMessage{
 		{
 			Msg:     _rcpReq.MarshalByte(),
 			IsEvent: false,

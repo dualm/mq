@@ -1,21 +1,20 @@
 package main
 
 import (
-	"context"
+	"github.com/dualm/mq/tibco"
 	"log"
 	"time"
-
-	"github.com/dualm/mq"
-	"github.com/dualm/mq/tibco"
 )
 
 func main() {
 	opt := tibco.TibOption{
-		FieldName:         "Message",
+		FieldName:         "DATA",
 		Service:           "",
 		Network:           "",
 		Daemon:            []string{},
 		TargetSubjectName: "a",
+		SourceSubjectName: "",
+		PooledMessage:     true,
 	}
 
 	infoC := make(chan string)
@@ -23,63 +22,24 @@ func main() {
 
 	tib := tibco.NewTibSender(&opt, infoC, errC)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	if err := tib.Run(ctx); err != nil {
+	if err := tib.Run(); err != nil {
 		log.Fatal(err)
 	}
-
-	// async
-	go func() {
-		for {
-			resp := make(chan mq.MqResponse)
-			tib.Send(
-				ctx,
-				resp,
-				[]mq.MqMessage{
-					{
-						Msg:           []byte("normal send"),
-						CorrelationID: "",
-						IsEvent:       true,
-					},
-				},
-			)
-
-			<-resp
-
-			time.Sleep(time.Second)
+	defer func() {
+		err := tib.Close()
+		if err != nil {
+			log.Println(err)
 		}
 	}()
 
-	go func() {
-		for {
-			resp := make(chan mq.MqResponse)
-			tib.Send(
-				ctx,
-				resp,
-				[]mq.MqMessage{
-					{
-						Msg:           []byte("normal send"),
-						CorrelationID: "",
-						IsEvent:       true,
-					},
-				},
-			)
-
-			<-resp
-
-			time.Sleep(time.Second)
+	for j := 0; j < 10; j++ {
+		_n := time.Now()
+		for i := 0; i < 10; i++ {
+			err := tib.SendReports([]string{"1", "2", "3", "4", "5"})
+			if err != nil {
+				panic(err)
+			}
 		}
-	}()
-
-	go func() {
-		for {
-			tib.SendReport("aaaa")
-
-			time.Sleep(time.Second)
-		}
-	}()
-
-	<-ctx.Done()
+		log.Println(time.Since(_n).Nanoseconds())
+	}
 }

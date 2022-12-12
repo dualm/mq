@@ -2,6 +2,7 @@ package tibco
 
 /*
 #include <stdlib.h>
+#include <stdint.h>
 #include "tibrv/tibrv.h"
 #include "tibrv/events.h"
 extern void goCallback(tibrvEvent event, tibrvMsg message, void* closure);
@@ -9,6 +10,7 @@ extern void goCallback(tibrvEvent event, tibrvMsg message, void* closure);
 import "C"
 import (
 	"fmt"
+	"runtime/cgo"
 	"unsafe"
 )
 
@@ -26,7 +28,8 @@ type TibrvEventCallback interface {
 
 //export goCallback
 func goCallback(event C.tibrvEvent, message C.tibrvMsg, p unsafe.Pointer) {
-	callback := *(*TibrvEventCallback)(p)
+	handle := *(*cgo.Handle)(p)
+	callback := handle.Value().(TibrvEventCallback)
 
 	callback.CallBack(Event{
 		tibrvEvent: event,
@@ -39,7 +42,7 @@ type Event struct {
 	tibrvEvent C.tibrvEvent
 }
 
-// NewListener，创建一个message event。如果queue为nil，则使用默认Queue.
+// NewListener 创建一个message event。如果queue为nil，则使用默认Queue.
 func NewListener(queue *Queue, transport *Transport, subject string, callback TibrvEventCallback) (*Event, error) {
 	var event C.tibrvEvent
 	var q C.uint
@@ -53,7 +56,16 @@ func NewListener(queue *Queue, transport *Transport, subject string, callback Ti
 	_cSubject := C.CString(subject)
 	defer C.free(unsafe.Pointer(_cSubject))
 
-	if status := C.tibrvEvent_CreateListener(&event, q, C.tibrvEventCallback(C.goCallback), transport.tibrvTransport, _cSubject, unsafe.Pointer(&callback)); status != C.TIBRV_OK {
+	handle := cgo.NewHandle(callback)
+
+	if status := C.tibrvEvent_CreateListener(
+		&event,
+		q,
+		C.tibrvEventCallback(C.goCallback),
+		transport.tibrvTransport,
+		_cSubject,
+		unsafe.Pointer(&handle),
+	); status != C.TIBRV_OK {
 		return nil, fmt.Errorf("create listener error, %d", status)
 	}
 
@@ -84,7 +96,7 @@ func (e *Event) GetListenerTransport() (*Transport, error) {
 	var t C.tibrvTransport
 
 	if status := C.tibrvEvent_GetListenerTransport(e.tibrvEvent, &t); status != C.TIBRV_OK {
-		return nil, fmt.Errorf("get listener transport error, %d", status)
+		return nil, fmt.Errorf("get listener cmTransport error, %d", status)
 	}
 
 	return &Transport{tibrvTransport: t}, nil

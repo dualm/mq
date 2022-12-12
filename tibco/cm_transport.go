@@ -14,28 +14,28 @@ type CmTransport struct {
 	tibrvCmTransport C.tibrvcmTransport
 }
 
-// NewCmTransport，创建一个tibrvcmTransport，其中，cmName为""时系统会生成唯一字符串作为CM Transport标识。
-func NewCmTransport(transport *Transport, cmName string, requestOld bool, ledgerName string, syncLedger bool, relayAgent string) (*CmTransport, error) {
+// NewCmTransport 创建一个tibrvCmTransport，其中，cmName为""时系统会生成唯一字符串作为CM Transport标识.
+func NewCmTransport(transport *Transport, opt *TibCmOption) (*CmTransport, error) {
 	var cmTransport C.tibrvcmTransport
-	_cCmName := C.CString(cmName)
-	if cmName == "" {
+	_cCmName := C.CString(opt.CmName)
+	if opt.CmName == "" {
 		_cCmName = nil
 	}
 	defer C.free(unsafe.Pointer(_cCmName))
 
-	_cLedgerName := C.CString(ledgerName)
-	if ledgerName == "" {
+	_cLedgerName := C.CString(opt.LedgerName)
+	if opt.LedgerName == "" {
 		_cLedgerName = nil
 	}
 	defer C.free(unsafe.Pointer(_cLedgerName))
 
-	_cRelayAgent := C.CString(relayAgent)
-	if relayAgent == "" {
+	_cRelayAgent := C.CString(opt.RelayAgent)
+	if opt.RelayAgent == "" {
 		_cRelayAgent = nil
 	}
 	defer C.free(unsafe.Pointer(_cRelayAgent))
 
-	if status := C.tibrvcmTransport_Create(&cmTransport, transport.tibrvTransport, _cCmName, TibrvBool(requestOld), _cLedgerName, TibrvBool(syncLedger), _cRelayAgent); status != C.TIBRV_OK {
+	if status := C.tibrvcmTransport_Create(&cmTransport, transport.tibrvTransport, _cCmName, TibrvBool(opt.RequestOld), _cLedgerName, TibrvBool(opt.SyncLedger), _cRelayAgent); status != C.TIBRV_OK {
 		return nil, fmt.Errorf("create cmTransport error, %d", status)
 	}
 
@@ -46,7 +46,7 @@ func NewCmTransport(transport *Transport, cmName string, requestOld bool, ledger
 
 func (t *CmTransport) Close() error {
 	if status := C.tibrvcmTransport_Destroy(t.tibrvCmTransport); status != C.TIBRV_OK {
-		return fmt.Errorf("destroy transport error, %d", status)
+		return fmt.Errorf("destroy cmTransport error, %d", status)
 	}
 
 	return nil
@@ -62,7 +62,7 @@ func (t *CmTransport) Send(message *Message) error {
 
 func (t *CmTransport) SendReply(reply, request *Message) error {
 	if status := C.tibrvcmTransport_SendReply(t.tibrvCmTransport, reply.tibrvMsg, request.tibrvMsg); status != C.TIBRV_OK {
-		return fmt.Errorf("send reply error, %d", status)
+		return fmt.Errorf("send cm reply error, %d", status)
 	}
 
 	return nil
@@ -72,7 +72,7 @@ func (t *CmTransport) SendRequest(request *Message, timeout float64) (*Message, 
 	var reply C.tibrvMsg
 
 	if status := C.tibrvcmTransport_SendRequest(t.tibrvCmTransport, request.tibrvMsg, &reply, C.double(timeout)); status != C.TIBRV_OK {
-		return nil, fmt.Errorf("send request error, %d", status)
+		return nil, fmt.Errorf("send cm request error, %d", status)
 	}
 
 	return &Message{
@@ -80,7 +80,7 @@ func (t *CmTransport) SendRequest(request *Message, timeout float64) (*Message, 
 	}, nil
 }
 
-// AddListener, 预注册一个预期中的listener。
+// AddListener 预注册一个预期中的listener。
 func (t *CmTransport) AddListener(cmName, subject string) error {
 	_cCmName := C.CString(cmName)
 	_cSubject := C.CString(subject)
@@ -200,7 +200,7 @@ func (t *CmTransport) GetTransport() (*Transport, error) {
 	var _t C.tibrvTransport
 
 	if status := C.tibrvcmTransport_GetTransport(t.tibrvCmTransport, &_t); status != C.TIBRV_OK {
-		return nil, fmt.Errorf("get transport error, %d", status)
+		return nil, fmt.Errorf("get cmTransport error, %d", status)
 	}
 
 	return &Transport{
