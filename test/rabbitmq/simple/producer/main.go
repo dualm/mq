@@ -41,6 +41,8 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
+	log.Println("send")
+
 	for i := 0; i < 1000; i++ {
 		go func() {
 			if err := sender.Send(ctx, false, false, []byte("Hello world")); err != nil {

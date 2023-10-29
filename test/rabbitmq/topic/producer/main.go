@@ -59,6 +59,7 @@ func main() {
 	//}
 	//}
 
+	log.Println("send")
 	var wg sync.WaitGroup
 	wg.Add(100)
 	for i := 0; i < 100; i++ {

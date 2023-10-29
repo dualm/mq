@@ -1,0 +1,15 @@
+Listener=""
+[Option]
+LedgerName = "Ledgerlisten"
+RequestOld = true
+SyncLedger = true
+RelayAgent = ""
+LimitTime = 0.0
+FieldName = "DATA/"
+Service = "17003"
+Network = ""
+Daemon = ["tcp:10.55.102.60:7500"]
+TargetSubjectName = "MES.UTA.04022.CM"
+PooledMessage = true
+CmName = "cmListenTesting"
+#[[Requests]]
