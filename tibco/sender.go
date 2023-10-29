@@ -97,6 +97,18 @@ func (t *TibSender) SendRequest(msg string, timeOut float64) (*Message, error) {
 	return t.transport.sendRequest(t.message, timeOut)
 }
 
+func (t *TibSender) SendReplyMessage(msg string, incoming *Message) error {
+	err := t.makeMsg(msg, t.message)
+	if err != nil {
+		return err
+	}
+
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
+	return t.transport.SendReply(t.message, incoming)
+}
+
 func (t *TibSender) SendReply(msg string, replySubject string) error {
 	err := t.makeMsg(msg, t.message)
 	if err != nil {
