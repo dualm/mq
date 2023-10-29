@@ -110,11 +110,7 @@ func (t *TibSender) SendReply(msg string, replySubject string) error {
 		return err
 	}
 
-	if err = t.transport.Send(t.message); err != nil {
-		return err
-	}
-
-	return t.message.SetSendSubject("")
+	return t.transport.Send(t.message)
 }
 
 // SendReport 发送消息
