@@ -11,12 +11,13 @@ import (
 
 type TibListener struct {
 	*TibOption
-	lock        sync.Mutex
-	infoChan    chan<- string
-	errChan     chan<- error
-	transport   *Transport
-	events      []*Event
-	messagePool *sync.Pool
+	lock          sync.Mutex
+	infoChan      chan<- string
+	errChan       chan<- error
+	transport     *Transport
+	events        []*Event
+	messagePool   *sync.Pool
+	listenSubject string
 }
 
 func NewTibListener(opt *TibOption, infoChan chan<- string, errChan chan<- error) (*TibListener, error) {
@@ -86,6 +87,8 @@ func (l *TibListener) Listen(subjectName string, cb TibrvEventCallback) error {
 
 	l.events = append(l.events, listener)
 
+	l.listenSubject = subjectName
+
 	go func() {
 		q, err := listener.GetQueue()
 		if err != nil {
@@ -104,4 +107,42 @@ func (l *TibListener) Listen(subjectName string, cb TibrvEventCallback) error {
 	}()
 
 	return nil
+}
+
+func (l *TibListener) SendReply(msg string, replySubject string) error {
+	_msg, err := NewMessage()
+	if err != nil {
+		return err
+	}
+
+	if err = _msg.AddString(l.TibOption.FieldName, msg, 0); err != nil {
+		return err
+	}
+
+	if err = _msg.SetSendSubject(l.listenSubject); err != nil {
+		return err
+	}
+
+	if err = _msg.SetReplySubject(replySubject); err != nil {
+		return err
+	}
+
+	return l.transport.Send(_msg)
+}
+
+func (l *TibListener) SendReplyMessage(msg string, incoming *Message) error {
+	_msg, err := NewMessage()
+	if err != nil {
+		return err
+	}
+
+	if err = _msg.AddString(l.TibOption.FieldName, msg, 0); err != nil {
+		return err
+	}
+
+	if err = _msg.SetSendSubject(l.listenSubject); err != nil {
+		return err
+	}
+
+	return l.transport.SendReply(_msg, incoming)
 }

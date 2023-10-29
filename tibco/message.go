@@ -683,7 +683,7 @@ func (msg *Message) SetSendSubject(sendSubject string) error {
 	defer C.free(unsafe.Pointer(_cSendSubject))
 
 	if status := C.tibrvMsg_SetSendSubject(msg.tibrvMsg, _cSendSubject); status != C.TIBRV_OK {
-		return fmt.Errorf("SetReplySubject error, code: %d", status)
+		return fmt.Errorf("set send subject error, code: %d", status)
 	}
 
 	return nil

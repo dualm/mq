@@ -103,8 +103,8 @@ func (t *TibSender) SendReplyMessage(msg string, incoming *Message) error {
 		return err
 	}
 
-	//t.lock.Lock()
-	//defer t.lock.Unlock()
+	t.lock.Lock()
+	defer t.lock.Unlock()
 
 	return t.transport.SendReply(t.message, incoming)
 }
@@ -115,8 +115,8 @@ func (t *TibSender) SendReply(msg string, replySubject string) error {
 		return err
 	}
 
-	//t.lock.Lock()
-	//defer t.lock.Unlock()
+	t.lock.Lock()
+	defer t.lock.Unlock()
 
 	if err = t.message.SetReplySubject(replySubject); err != nil {
 		return err
