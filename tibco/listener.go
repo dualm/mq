@@ -109,7 +109,7 @@ func (l *TibListener) Listen(subjectName string, cb TibrvEventCallback) error {
 	return nil
 }
 
-func (l *TibListener) SendReply(msg string, replySubject string) error {
+func (l *TibListener) SendReply(msg string, listenSubject, replySubject string) error {
 	_msg, err := NewMessage()
 	if err != nil {
 		return err
@@ -119,7 +119,7 @@ func (l *TibListener) SendReply(msg string, replySubject string) error {
 		return err
 	}
 
-	if err = _msg.SetSendSubject(l.listenSubject); err != nil {
+	if err = _msg.SetSendSubject(listenSubject); err != nil {
 		return err
 	}
 
@@ -137,10 +137,6 @@ func (l *TibListener) SendReplyMessage(msg string, incoming *Message) error {
 	}
 
 	if err = _msg.AddString(l.TibOption.FieldName, msg, 0); err != nil {
-		return err
-	}
-
-	if err = _msg.SetSendSubject(l.listenSubject); err != nil {
 		return err
 	}
 
