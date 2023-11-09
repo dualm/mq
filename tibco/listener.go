@@ -6,7 +6,9 @@ package tibco
 import "C"
 import (
 	"errors"
+	"runtime/cgo"
 	"sync"
+	"unsafe"
 )
 
 type TibListener struct {
@@ -18,9 +20,10 @@ type TibListener struct {
 	events        []*Event
 	messagePool   *sync.Pool
 	listenSubject string
+	cb            func(Event, Message)
 }
 
-func NewTibListener(opt *TibOption, infoChan chan<- string, errChan chan<- error) (*TibListener, error) {
+func NewTibListener(opt *TibOption, cb func(Event, Message), infoChan chan<- string, errChan chan<- error) (*TibListener, error) {
 	if err := tibrvOpen(); err != nil {
 		return nil, err
 	}
@@ -49,6 +52,7 @@ func NewTibListener(opt *TibOption, infoChan chan<- string, errChan chan<- error
 				return msg
 			},
 		},
+		cb: cb,
 	}
 
 	return listener, nil
@@ -72,7 +76,7 @@ func (l *TibListener) Close() error {
 	return nil
 }
 
-func (l *TibListener) Listen(subjectName string, cb TibrvEventCallback) error {
+func (l *TibListener) Listen(subjectName string) error {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 
@@ -80,7 +84,8 @@ func (l *TibListener) Listen(subjectName string, cb TibrvEventCallback) error {
 		return errors.New("all transports are nil")
 	}
 
-	listener, err := NewListener(nil, l.transport, subjectName, cb)
+	_h := cgo.NewHandle(l.cb)
+	listener, err := NewListener(nil, l.transport, subjectName, unsafe.Pointer(&_h))
 	if err != nil {
 		return err
 	}

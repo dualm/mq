@@ -29,13 +29,12 @@ type TibrvEventCallback interface {
 //export goCallback
 func goCallback(event C.tibrvEvent, message C.tibrvMsg, p unsafe.Pointer) {
 	handle := *(*cgo.Handle)(p)
-	callback := handle.Value().(TibrvEventCallback)
 
-	callback.CallBack(Event{
-		tibrvEvent: event,
-	}, Message{
-		tibrvMsg: message,
-	})
+	if handle != 0 {
+		callback := handle.Value().(func(Event, Message))
+
+		callback(Event{tibrvEvent: event}, Message{tibrvMsg: message})
+	}
 }
 
 type Event struct {
@@ -43,7 +42,7 @@ type Event struct {
 }
 
 // NewListener 创建一个message event。如果queue为nil，则使用默认Queue.
-func NewListener(queue *Queue, transport *Transport, subject string, callback TibrvEventCallback) (*Event, error) {
+func NewListener(queue *Queue, transport *Transport, subject string, p unsafe.Pointer) (*Event, error) {
 	var event C.tibrvEvent
 	var q C.uint
 
@@ -56,15 +55,13 @@ func NewListener(queue *Queue, transport *Transport, subject string, callback Ti
 	_cSubject := C.CString(subject)
 	defer C.free(unsafe.Pointer(_cSubject))
 
-	handle := cgo.NewHandle(callback)
-
 	if status := C.tibrvEvent_CreateListener(
 		&event,
 		q,
 		C.tibrvEventCallback(C.goCallback),
 		transport.tibrvTransport,
 		_cSubject,
-		unsafe.Pointer(&handle),
+		p,
 	); status != C.TIBRV_OK {
 		return nil, fmt.Errorf("create listener error, %d", status)
 	}
