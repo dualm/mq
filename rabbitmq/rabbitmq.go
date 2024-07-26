@@ -62,6 +62,7 @@ type ExchangeOption struct {
 	AutoDelete bool
 	Durable    bool
 	NoWait     bool
+	Exclusive  bool
 	Args       amqp.Table
 }
 

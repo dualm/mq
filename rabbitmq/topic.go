@@ -7,10 +7,11 @@ import (
 	"sync"
 )
 
-// todo add confirm option with error channel
 type TopicProducer struct {
+	// todo add confirm option with error channel
 	sendExchangeOption *ExchangeOption // 关联的发送exchange信息
-	recvReplyChan      sync.Map
+
+	recvReplyChan sync.Map
 
 	sendSession      *Session // 发送Request和Report的Session
 	recvReplySession *Session // 收到Reply的Session
@@ -18,23 +19,24 @@ type TopicProducer struct {
 	recvReplyQueue amqp.Queue // 提供永久ReplyQueue供消费发送Reply消息
 }
 
-// todo add confirm option with error channel
 type TopicConsumer struct {
+	// todo add confirm option with error channel
 	recvExchangeOption  *ExchangeOption // 关联的exchange信息
 	replyExchangeOption *ExchangeOption // 关联的发送Reply的exchange信息
-	consumerOption      *ConsumerOption // 消费的配置
-	recvSession         *Session        // 接收消息的Session
-	sendReplySession    *Session        // 发送Reply的Session
-	errorChan           chan error
+
+	consumerOption   *ConsumerOption // 消费的配置
+	recvSession      *Session        // 接收消息的Session
+	sendReplySession *Session        // 发送Reply的Session
+	errorChan        chan error
 }
 
-func NewTopicProducer(dialOption *DialOption, sendExchangeOption, recvExchangeOption *ExchangeOption) (*TopicProducer, error) {
+func NewTopicProducer(dialOption *DialOption, sendExchangeOption, recvExchangeOption *ExchangeOption, recvQueueOption *QueueOption, recvReplyRoutingKey string) (*TopicProducer, error) {
 	t := &TopicProducer{
 		sendExchangeOption: sendExchangeOption,
-		recvReplyChan:      sync.Map{},
 	}
 
 	var err error
+
 	t.sendSession, err = topicSession(dialOption, sendExchangeOption)
 	if err != nil {
 		return nil, err
@@ -45,12 +47,12 @@ func NewTopicProducer(dialOption *DialOption, sendExchangeOption, recvExchangeOp
 		return nil, err
 	}
 
-	t.recvReplyQueue, err = t.recvReplySession.Channel.QueueDeclare("", false, true, false, false, nil)
+	t.recvReplyQueue, err = t.recvReplySession.Channel.QueueDeclare(recvQueueOption.Name, recvQueueOption.Durable, recvQueueOption.AutoDelete, recvQueueOption.Exclusive, recvQueueOption.NoWait, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	err = t.recvReplySession.Channel.QueueBind(t.recvReplyQueue.Name, t.recvReplyQueue.Name, recvExchangeOption.Name, false, nil)
+	err = t.recvReplySession.Channel.QueueBind(t.recvReplyQueue.Name, recvReplyRoutingKey, recvExchangeOption.Name, recvQueueOption.NoWait, nil)
 	if err != nil {
 		return nil, fmt.Errorf("bind receive queue error, %w", err)
 	}
@@ -210,6 +212,9 @@ func (t *TopicConsumer) Recv(queueOption *QueueOption, routingKey string) (chan 
 	re := make(chan *Receive, 8)
 
 	_msgs, err := consumeDeclare(t.recvSession.Channel, _q.Name, t.consumerOption)
+	if err != nil {
+		return nil, err
+	}
 
 	go func() {
 		for i := range _msgs {

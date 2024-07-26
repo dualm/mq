@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"github.com/dualm/mq/rabbitmq"
+	"gitee.com/ziegate/mq/rabbitmq"
 	"log"
 	"os"
 	"os/signal"
